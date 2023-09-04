@@ -15,10 +15,10 @@ import xgboost as xgb
 import torch
 from torch import Tensor
 
-import acquisition
-import models
-import utils
-from utils import MapClass
+import src.acquisition as acquisition
+import src.models as models
+import src.utils as utils
+from src.utils import MapClass
 
 #### BO struct ####
 
@@ -38,7 +38,7 @@ class BO_ARGS(MapClass):
     queries_y: Tensor | None = None
     indices: Tensor | None = None
     # model
-    mtype: Literal['DKL', 'GP', 'DKL_BOTORCH', 'GP_BOTORCH', 'BDKL_MCMC_NP', 'BDKL_SVI_PYRO', 'BDKL_SVI_TFP'] = 'DKL'
+    mtype: Literal['DKL', 'GP'] = 'DKL'
     kernel: str = 'rbf'
     architecture: Sequence[int] = None
     activation: str = 'relu'

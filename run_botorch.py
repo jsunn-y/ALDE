@@ -13,9 +13,9 @@ import multiprocessing as mp
 # from concurrent.futures import ProcessPoolExecutor
 import warnings
 
-from optimize import BayesianOptimization, BO_ARGS
-import objectives
-import utils
+from src.optimize import BayesianOptimization, BO_ARGS
+import src.objectives as objectives
+import src.utils as utils
 
 from dataclasses import dataclass
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_ESM2'
+    encoding = 'GB1_onehot'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -81,8 +81,8 @@ if __name__ == "__main__":
         print('Context already set.')
     
     # make dir to hold tensors
-    path = '/home/jyang4/repos/DK-BO/'
-    subdir = path + 'results/CNN_GB1_ESM2_batch/'
+    path = '/home/jyang4/repos/DKBO-MLDE/'
+    subdir = path + 'results/test/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,12 +90,12 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 10
+    runs = 1
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
 
-    with open('../rndseed.txt', 'r') as f:
+    with open('rndseed.txt', 'r') as f:
         lines = f.readlines()
         for i in range(runs):
             print('run index: {}'.format(index+i))

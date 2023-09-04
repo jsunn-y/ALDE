@@ -13,9 +13,9 @@ import multiprocessing as mp
 # from concurrent.futures import ProcessPoolExecutor
 import warnings
 
-from optimize import BayesianOptimization, BO_ARGS
-import objectives
-import utils
+from src.optimize import BayesianOptimization, BO_ARGS
+import src.objectives
+import src.utils
 
 from dataclasses import dataclass
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'trpB_onehot'
+    encoding = 'GB1_onehot'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -72,8 +72,8 @@ if __name__ == "__main__":
     disc_X = obj.get_points()[0]
     batch_size = 96
 
-    n_pseudorand_init = 384
-    budget = 384 - n_pseudorand_init + 96 #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    n_pseudorand_init = batch_size
+    budget = 384 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DK-BO/'
-    subdir = path + 'results/trpB_onehot_oneround/'
+    subdir = path + 'results/CNN_GB1_onehot_batch/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,12 +90,11 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 20
+    runs = 24
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
 
-   
     with open('../rndseed.txt', 'r') as f:
         lines = f.readlines()
         for i in range(runs):
@@ -142,14 +141,15 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['GP']:
-            for acq_fn in ['Greedy']:
+        for mtype in  ['GP', 'DKL', 'CDKL']:
+            for acq_fn in ['UCB', 'TS']: #'EI', 'UCB','TS'
                 dropout=0
 
-                if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
-                    num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
-                else:
-                    num_simult_jobs = 10
+                # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
+                #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
+                # else:
+                #     num_simult_jobs = 10
+                num_simult_jobs = 5
 
                 if mtype =='GP':
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
@@ -158,6 +158,15 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 40, 20, 10]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50] #becomes DKL automatically if more than two layers
+                elif mtype == 'CDKL':
+                    if 'onehot' in encoding:
+                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
+                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32]
+                    elif 'ESM2' in encoding:
+                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32]
+
+                    # if 'ESM2' in encoding:
+                    #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
                 else:
                     arc = [domain[0].size(-1), 1] #filler architecture for MLDE
 
@@ -176,8 +185,8 @@ if __name__ == "__main__":
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,
-                    trainlr=1e-2,
-                    train_iter=100,
+                    trainlr=1e-3, #originally 1e-2 in james
+                    train_iter=300,
                     dropout=dropout,
                     mcdropout=0,
                     verbose=2,
