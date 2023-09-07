@@ -14,8 +14,8 @@ import multiprocessing as mp
 import warnings
 
 from src.optimize import BayesianOptimization, BO_ARGS
-import src.objectives
-import src.utils
+import src.objectives as objectives
+import src.utils as utils
 
 from dataclasses import dataclass
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot'
+    encoding = 'trpB_onehot'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -81,8 +81,8 @@ if __name__ == "__main__":
         print('Context already set.')
     
     # make dir to hold tensors
-    path = '/home/jyang4/repos/DK-BO/'
-    subdir = path + 'results/CNN_GB1_onehot_batch/'
+    path = '/home/jyang4/repos/DKBO-MLDE/'
+    subdir = path + 'results/trpB_onehot/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     index = 0
     seeds = []
 
-    with open('../rndseed.txt', 'r') as f:
+    with open('rndseed.txt', 'r') as f:
         lines = f.readlines()
         for i in range(runs):
             print('run index: {}'.format(index+i))
@@ -149,21 +149,21 @@ if __name__ == "__main__":
                 #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
                 # else:
                 #     num_simult_jobs = 10
-                num_simult_jobs = 5
+                num_simult_jobs = 2
 
                 if mtype =='GP':
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif mtype =='DKL':
                     if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10]
+                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
                     else:
-                        arc  = [domain[0].size(-1), 500, 150, 50] #becomes DKL automatically if more than two layers
+                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                 elif mtype == 'CDKL':
                     if 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32]
+                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
                     elif 'ESM2' in encoding:
-                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32]
+                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
 
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]

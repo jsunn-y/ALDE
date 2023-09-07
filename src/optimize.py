@@ -285,7 +285,6 @@ class BayesianOptimization:
                         ypred = ypred_list[index]
                         idx = idx_list[index]
                 else:
-                    ###this function could return the whole batch (UCB) or a for loop (sampling)
                     #start = time.time()
                     if index == 0:
                         x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
