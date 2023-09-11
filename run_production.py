@@ -4,6 +4,7 @@ import gpytorch
 import botorch
 
 import numpy as np
+import pandas as pd
 import random
 # from datetime import datetime
 # import glob
@@ -63,7 +64,11 @@ if __name__ == "__main__":
 
     # USER: create objective fn in objectives.py
     encoding = 'GB1_ESM2'
-    obj = objectives.Combo(encoding)
+    df = pd.read_csv('test_fivesite.csv')
+    n_samples = len(df)
+    obj = objectives.Production(df, encoding)
+    #TODO: output the order of the combos so that the indices are specific
+    
 
     #obj = objectives.Hartmann_6d()
     obj_fn = obj.objective
@@ -72,8 +77,7 @@ if __name__ == "__main__":
     disc_X = obj.get_points()[0]
     batch_size = 96
 
-    n_pseudorand_init = batch_size
-    budget = 384 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = 96 - n_samples #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -93,52 +97,14 @@ if __name__ == "__main__":
     runs = 24
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
-    seeds = []
+    seed = 1
 
-    with open('rndseed.txt', 'r') as f:
-        lines = f.readlines()
-        for i in range(runs):
-            print('run index: {}'.format(index+i))
-            line = lines[i+index].strip('\n')
-            print('seed: {}'.format(int(line)))
-            seeds.append(int(line))
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
     arg_list = []
 
     for r in range(index, index + runs):
-        seed = seeds[r - index]
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        random.seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-
-        # TODO: switch to Sobol instead of uniform? this should be done for continuous fns, but not e.g. proteins
-        def get_initial_points(dim, n_pts, seed=0):
-            sobol = torch.quasirandom.SobolEngine(dimension=dim, scramble=True, seed=seed)
-            X_init = sobol.draw(n=n_pts).to(dtype=dtype, device=device)
-            return X_init
-
-        start_x, start_y, start_indices = utils.samp_discrete(n_pseudorand_init, obj, seed)
-
-        # do random search first
-        if budget != 0:
-            _, randy, rand_indices = utils.samp_discrete(budget + 96, obj, seed)
-            randy = torch.cat((start_y, randy), 0) #concatenate to the initial points
-        else:
-            randy = start_y
-        temp = []
-        for n in range(budget + 96 + 1):
-            m = torch.max(randy[:n + n_pseudorand_init])
-            reg = torch.reshape(torch.abs(ymax - m), (1, -1))
-            temp.append(reg)
-        tc = torch.cat(temp, 0)
-        tc = torch.reshape(tc, (1, -1))
-        torch.save(tc, subdir + 'Random_' + str(r + 1) + 'regret.pt')
-        torch.save(randy, subdir + 'Random_' + str(r + 1) + 'y.pt')
-        print('Random search done.')
 
         kernel='RBF'
         for mtype in  ['GP', 'DKL', 'CDKL']:
@@ -199,12 +165,12 @@ if __name__ == "__main__":
                     n_rand_init=0,
                     budget=budget,
                     query_cost=1,
-                    queries_x=start_x,
-                    queries_y=start_y,
-                    indices=start_indices,
+                    queries_x=obj.Xtrain,
+                    queries_y=obj.ytrain,
+                    indices=range(n_samples),
                     savedir=subdir+fname,
                     batch_size = batch_size,
-                    run_mlde = True
+                    run_mlde = False
                 )
                 arg_list.append((args, seed))
 

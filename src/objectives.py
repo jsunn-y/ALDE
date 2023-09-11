@@ -129,6 +129,8 @@ class Production(Objective):
         self.Xtrain = generate_onehot(train_combos)
 
         nsites = len(df['Combo'][0])
+        
+        assert encoding == 'onehot'
         self.all_combos = generate_all_combos(nsites)
         self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
         self.Xtest = generate_onehot(self.test_combos)

@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot'
+    encoding = 'GB1_ESM2'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/test/'
+    subdir = path + 'results/GB1_ESM2/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 1
+    runs = 24
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
@@ -141,8 +141,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['CDKL']:
-            for acq_fn in ['TS']: #'EI', 'UCB','TS'
+        for mtype in  ['MLDE']:
+            for acq_fn in ['UCB']: #'EI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:

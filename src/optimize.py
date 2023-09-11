@@ -90,6 +90,7 @@ class BayesianOptimization:
                  indices: Tensor | None = None,
                  savedir='',
                  verbose=True,
+                 run_mlde=True,
                  *_, **__):
         '''Initialize BayesOpt.
 
@@ -123,6 +124,7 @@ class BayesianOptimization:
         self.obj_max = obj_max
         self.verbose = verbose
         self.acq_fn = acq_fn
+        self.run_mlde = run_mlde
 
         # init existing samples and normalize inputs
         if queries_x is None or queries_y is None:
@@ -315,20 +317,21 @@ class BayesianOptimization:
                 break
         
         #do MLDE at the end
-        if self.cost < self.budget + 96:
+        #if self.cost < self.budget + 96:
+        if self.run_mlde:
             print('Running MLDE for final 96 queries.')
             x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y)
             #check the dimension of x here
             for x, ypred, idx in zip(x_list, ypred_list, idx_list):
                 max, simp_reg = self.update_trajectory(x.reshape(1,-1), ypred, idx)
 
-            if self.savedir is not None:
+        
+        if self.savedir is not None:
                 save_tensors()
 
-            if self.verbose >= 1: print(f"{os.path.basename(self.savedir)} | Optimization runtime: {datetime.now() - start} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f}")
+        if self.verbose >= 1: print(f"{os.path.basename(self.savedir)} | Optimization runtime: {datetime.now() - start} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f}")
         
         return
-        #return self.surrogate,
 
     @staticmethod
     def run(kwargs, seed):
