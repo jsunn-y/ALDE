@@ -55,6 +55,7 @@ class BO_ARGS(MapClass):
     query_cost: float = 1.
     savedir: str = 'results/'
     verbose: int = 1 # 0, 1, 2, 3
+    run_mlde: bool = True
     
 
 #### Generic Bayesian Optimization framework

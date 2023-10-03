@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_ESM2'
+    encoding = 'onehot'
     df = pd.read_csv('test_fivesite.csv')
     n_samples = len(df)
     obj = objectives.Production(df, encoding)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     disc_X = obj.get_points()[0]
     batch_size = 96
 
-    budget = 96 - n_samples #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = 96 #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/GB1_ESM2/'
+    subdir = path + 'results/production_test/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -94,10 +94,10 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 24
+    runs = 1
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
-    seed = 1
+    
 
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -105,10 +105,10 @@ if __name__ == "__main__":
     arg_list = []
 
     for r in range(index, index + runs):
-
+        seed = r
         kernel='RBF'
-        for mtype in  ['GP', 'DKL', 'CDKL']:
-            for acq_fn in ['UCB', 'TS']: #'EI', 'UCB','TS'
+        for mtype in  ['DKL']:
+            for acq_fn in ['TS']: #'EI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -167,7 +167,7 @@ if __name__ == "__main__":
                     query_cost=1,
                     queries_x=obj.Xtrain,
                     queries_y=obj.ytrain,
-                    indices=range(n_samples),
+                    indices=torch.arange(n_samples),
                     savedir=subdir+fname,
                     batch_size = batch_size,
                     run_mlde = False

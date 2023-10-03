@@ -125,8 +125,9 @@ class Production(Objective):
     def __init__(self, df, encoding):
         train_combos = df['Combo'].tolist()
         self.nsamples = len(train_combos)
-        self.ytrain = df['Fitness'].values
+        self.ytrain = torch.tensor(df['Fitness'].values)
         self.Xtrain = generate_onehot(train_combos)
+        self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
 
         nsites = len(df['Combo'][0])
         
@@ -134,7 +135,8 @@ class Production(Objective):
         self.all_combos = generate_all_combos(nsites)
         self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
         self.Xtest = generate_onehot(self.test_combos)
-        self.ytest = np.zeros(len(self.test_combos))
+        self.Xtest = torch.reshape(self.Xtest, (self.Xtest.shape[0], -1))
+        self.ytest = torch.zeros(len(self.test_combos))
 
         self.X = torch.tensor(np.concatenate([self.Xtrain, self.Xtest]))
         self.y = torch.tensor(np.concatenate([self.ytrain, self.ytest]))

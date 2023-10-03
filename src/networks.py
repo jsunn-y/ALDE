@@ -298,7 +298,6 @@ class GP(gpytorch.models.ExactGP, GenericModel):
     def embedding(self, x: Tensor) -> Tensor:
         # for use with TS acq
         if self.dkl:
-            #fix this later so it only does this for the CNN
             if self.cdkl:
                  #unflatten the array for CNN
                  n_sites = self.architecture[0]

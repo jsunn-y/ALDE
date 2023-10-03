@@ -180,7 +180,8 @@ def thompson_sampling(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2, 
         acquisition_function = PosteriorMean(model=gp_sample)
 
         def max_obj(x):
-            return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(device))
+            return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
+            #return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(device))
         
     if not embedded and model.dkl:
         # start= time.time()

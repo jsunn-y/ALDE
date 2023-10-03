@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import itertools
 
 ALL_AAS = ("A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y")
@@ -50,7 +51,7 @@ def generate_onehot(seqs: list) -> np.ndarray:
     one_hot_dict = {aa: i for i, aa in enumerate(ALL_AAS)}
 
     # Build an array of zeros
-    onehot_array = np.zeros([len(seqs), len(seqs[0]), len(ALL_AAS)])
+    onehot_array = torch.zeros([len(seqs), len(seqs[0]), len(ALL_AAS)])
     
     # Loop over all combos. This should all be vectorized at some point.
     for i, combo in enumerate(seqs):
@@ -64,6 +65,27 @@ def generate_onehot(seqs: list) -> np.ndarray:
             
     # Return the flattened array
     return onehot_array
+
+def onehot2combo(encodings: np.ndarray) -> list:
+    """
+    converts an array n_samples x encoding_length to a list of n_samples with strings describing the encoding
+    """
+
+    # Build an array of zeros
+    combos = []
+    
+    # Loop over all combos. This should all be vectorized at some point.
+    for i, encoding in enumerate(encodings):
+        
+        encoding = encoding.reshape(-1, len(ALL_AAS))
+        #get the index of 1 in each row
+        indices = np.argmax(encoding, axis=1)
+        #map each index in indices to the letter in ALL_AAS
+        combo = ''.join([ALL_AAS[i] for i in indices])
+        combos.append(combo)
+            
+    # Return the flattened array
+    return combos
 
 def generate_georgiev(seqs: list) -> np.ndarray:
     """

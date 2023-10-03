@@ -72,7 +72,7 @@ if __name__ == "__main__":
     disc_X = obj.get_points()[0]
     batch_size = 96
 
-    n_pseudorand_init = batch_size
+    n_pseudorand_init = 384
     budget = 384 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
                 #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
                 if mtype == 'MLDE':
-                    fname = mtype +  '_' + str(r + 1)
+                    fname = 'MLDE-oneround' +  '_' + str(r + 1)
                 else:
                     fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
                 args = BO_ARGS(
