@@ -189,7 +189,7 @@ if __name__ == "__main__":
                     trainlr=1e-3, #originally 1e-2 in james
                     train_iter=300,
                     dropout=dropout,
-                    mcdropout=0,
+                    mcdropout=0,                                                                                                                                                                                                                                                                                                                                                                     
                     verbose=2,
                     # usually don't change
                     bb_fn=obj_fn,

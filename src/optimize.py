@@ -126,6 +126,7 @@ class BayesianOptimization:
         self.verbose = verbose
         self.acq_fn = acq_fn
         self.run_mlde = run_mlde
+        self.xi = xi
 
         # init existing samples and normalize inputs
         if queries_x is None or queries_y is None:
@@ -182,8 +183,6 @@ class BayesianOptimization:
 
         # TODO: cont, discr obj selection
         # add multiple acquisition functions if desired
-        self.acq = acquisition.Acquisition(
-            acq_fn, acquisition.acq_optimize_discrete, self.domain, xi)
         if self.verbose >= 1: print("Initialization completed.\n")
 
     def optimize(self,) -> tuple:
@@ -243,7 +242,7 @@ class BayesianOptimization:
             max = torch.reshape(self.max/self.obj_max, (1,1))
 
             if self.verbose >= 2: print(f"\n{os.path.basename(self.savedir)} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f} | Used {self.cost}/{self.budget} budget.\n\n")
-        self.norm_y = self.queries_y / self.normalizer
+        self.norm_y = self.queries_y / self.normalizer #normalized y_queries
 
         # train init model on random samples w/ norm y
         print("Creating initial prior.")
@@ -290,11 +289,21 @@ class BayesianOptimization:
                 else:
                     #start = time.time()
                     if index == 0:
-                        x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
-                    elif self.acq_fn != 'TS':
-                        x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=preds, embeddings=None)
+                        acq = acquisition.Acquisition(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi)
+                        acq.get_embedding()
+                        acq.get_preds()
                     else:
-                        x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=embeddings)
+                        if self.acq_fn == 'TS':
+                            acq.get_preds()
+
+                    x, ypred, idx = acq.get_next_query(self.queries_x, self.norm_y)
+
+                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
+
+                    # elif self.acq_fn != 'TS':
+                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=preds, embeddings=None)
+                    # else:
+                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=embeddings)
 
                     #print('Evaluation time: ', time.time()-start)
 

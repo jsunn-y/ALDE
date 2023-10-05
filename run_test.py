@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
         kernel='RBF'
         for mtype in  ['DKL']:
-            for acq_fn in ['UCB']: #'EI', 'UCB','TS'
+            for acq_fn in ['QEI']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -182,7 +182,7 @@ if __name__ == "__main__":
                     kernel=kernel,
                     acq_fn=acq_fn,
                     # secondary args
-                    xi=.1,
+                    xi=4,
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,

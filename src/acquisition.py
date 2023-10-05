@@ -12,124 +12,121 @@ from botorch.utils.gp_sampling import get_gp_samples
 
 import src.utils as utils
 
-
-gpu = torch.cuda.is_available()
-#gpu = False
-
 class Acquisition:
     """Generic class for acquisition functions that includes the function and
     its optimizer. After initialization, call get_next_query() to obtain the
     suggested next query input."""
 
-    def __init__(self, acq_fn, opt_fn, domain, xi):
+    def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi):
         """Initializes Acquisition object.
         -@param: acq_fn, takes in prior distribution and builds function
         -@param: next_query, optimizes acq_fn and returns next x val.
         """
-        self.acq_fn = acq_fn
-        self.next_query = acq_optimize_discrete
-        self.next_query = opt_fn
+        self.gpu = torch.cuda.is_available()
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        self.acq = acq_fn_name
+        self.queries_x = queries_x.double()
+        self.norm_y = norm_y.double()
+        self.model = model.double().to(self.device)
+        self.disc_X = disc_X.double()
+        self.verbose = verbose
         self.domain = domain # not used bc discrete domain
         self.xi = xi
 
+        self.embeddings = None
+        self.preds = None
+
     # get rid of extra params here and above
-    def get_next_query(
-        self,
-        samp_x,
-        samp_y,
-        model,
-        disc_X,
-        verbose=2,
-        index=0,
-        preds=None,
-        embeddings=None
-    ):
-        """Gets next query by optimizing the acquisition function. Restarts to
-        avoid local extrema. Minimization objective should be created inside the
-        optimization function (though could be impl. outside?).
-            -@param: domain, a tuple of (minx, maxx)
-            -@param: samples, a tuple of (x, y) where both are torch tensors
-            -@param: prior, a model (e.g. GP, deep kernel)
-            -@param: likelihood (probably mll)
-            -return: torch.tensor (same dim as x)
+    def get_next_query(self, samp_x, samp_y):
+        """Returns the next query input."""
+        ind = torch.argmax(self.preds)
+        best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
+        acq_val = self.preds[ind].detach().double()
+        best_idx = ind
+        
+        # if maximizer already queried, take the "next best"
+        if utils.find_x(best_x, samp_x.cpu()):
+            best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
+        return best_x, acq_val, best_idx
+
+
+    def get_embedding(self):
         """
-        result = self.next_query(
-            self.acq_fn,
-            samp_x,
-            samp_y,
-            model,
-            self.xi,
-            disc_X=disc_X,
-            verbose=verbose,
-            index=index,
-            preds=preds,
-            embeddings=embeddings)
-        return result
-
-
-def acq_optimize_discrete(
-    acq,
-    samp_x,
-    samp_y,
-    model,
-    xi,
-    disc_X,
-    batch_size=1000,
-    verbose=2,
-    index=0,
-    preds=None,
-    embeddings=None,
-):
-    """
-    Proposes the next sampling point by optimizing the acquisition function.
-    Args:
-        acquisition: Acquisition function.
-        X_sample: Sample locations (n x d).
-        Y_sample: Sample values (n x 1).
-        model: A GaussianProcessRegressor or other model fitted to samples.
-    Returns:
-        Location of the acquisition function maximum.
-    """
-    # USER: choose an acq fn. to implement your own, see above interface.
-    # to add another botorch acq, create a function wrapper as above.
-    acq_dict = {
-        "EI": expected_improvement,
-        "UCB": upper_conf_bound,
-        "TS": thompson_sampling,
-        "GREEDY": greedy
-    }
-    if acq.upper() not in acq_dict:
-        raise NotImplementedError(f"Acq fn not recognized/implemented. Choose one of {acq_dict.keys()} or add your own.")
-    else:
-        fn = acq_dict[acq.upper()]
-
-    batch = disc_X.double()
-
-    # predict and find acq. fn maximizer
-    #for UCB don't always take the best one if the batch is greater than 1
-    #don't actually need this anymore, cause it will automatically find the next best proposed point
-    if (acq.upper() != 'TS') and index == 0:
-        preds = fn(batch, samp_x, samp_y, model, xi, batch=batch_size, verbose=verbose).detach()
-    elif (acq.upper() == 'TS') and index == 0:
-        preds,  embeddings = fn(batch, samp_x, samp_y, model, xi, batch=batch_size, verbose=verbose, embedded = False)
-        preds = preds.detach()
-        embeddings = embeddings.detach()
-    elif (acq.upper() == 'TS') and index != 0: # use the new embeddings
-        preds,  embeddings = fn(embeddings, samp_x, samp_y, model, xi, batch=batch_size, verbose=verbose, embedded = True)
-        preds = preds.detach()
-        embeddings = embeddings.detach()
-    else:
-        pass
+        Embeds all of the values in disc_X using the deep NN layers, for TS acquisition. Embedding is not changed for other acquisition functions.
+        Updates self.embeddings to be the embeddings of each point in disc_X.
+        """
+        if self.acq.upper() == 'TS':
+            # start= time.time()
+            self.embeddings = self.model.embed_batched_gpu(self.disc_X, batch_size=1000).double()
+            # print('embedding time', time.time() - start)
+        else:
+            self.embeddings = self.disc_X
        
-    ind = torch.argmax(preds)
-    best_x = torch.reshape(batch[ind].detach(), (1, -1)).double()
-    acq_val = preds[ind].detach().double()
-    best_idx = ind
-    
-    # if maximizer already queried, take the "next best"
-    if utils.find_x(best_x, samp_x.cpu()):
-        best_x, acq_val, best_idx = utils.find_next_best(batch, preds, samp_x, samp_y)
-    return best_x, acq_val, best_idx, preds, embeddings
+    def get_preds(self):
+        """
+        Passes the encoded values in dix_X through the acquisition function.
+        Updates self.preds to be the acquisition function values at each point.
+        """
+        #for botorch acquisition functions
+        if self.acq.upper() in ('TS', 'QEI'):
+            if self.model.lin and self.acq.upper() == 'TS':
+                noise = self.model.get_kernel_noise().to(self.device).double()
+                if self.model.dkl:
+                    samp_x = samp_x
+                    # x is only nn embedding
+                    nn_x = self.model.embedding(samp_x.double()).to(self.device)
+                else:
+                    nn_x = samp_x.double()#.to(self.device)
+            else:
+                #need to set self.train_inputs to the embedding, not the original
+                if self.model.dkl:
+                    model = copy.copy(self.model).to(self.device)
+                    inputs = model.train_inputs[0].to(self.device)
+                    nn_x = model.embedding(inputs)
+                    model.train_inputs = (nn_x,)
+                else:
+                    model.train_inputs = (self.model.train_inputs[0],)
+                
+
+                if self.acq.upper() == 'TS':
+                    #only needs train inputs, train outputs, and covariance, likelihood
+                    gp_sample = get_gp_samples(
+                            model=model,
+                            num_outputs=1,
+                            n_samples=1,
+                            num_rff_features=1000,
+                    )
+                    acquisition_function = PosteriorMean(model=gp_sample)
+                elif self.acq.upper() == 'QEI':
+                    sampler = botorch.sampling.SobolQMCNormalSampler(128)
+                    acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
+                        model=model,
+                        X_baseline=self.queries_x,
+                        sampler=sampler.to(self.device),
+                        prune_baseline=True,
+                    )
+
+                def max_obj(x):
+                    return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
+                
+                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=max_obj).cpu().detach().double()
+
+        #self implemented acquisition functions
+        else:
+            if self.gpu: 
+                self.model = self.model.cuda()
+                # so don't put too much on gpu at once
+                with gpytorch.settings.fast_pred_var(), torch.no_grad():
+                    mu, sigma = self.model.predict_batched_gpu(self.embeddings, batch_size=1000)
+            else:
+                mu, sigma = self.model.predict(self.embeddings)
+
+            if self.acq.upper() == 'UCB':
+                delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                self.preds = mu + delta
+            elif self.acq.upper() == 'GREEDY':
+                self.preds = mu.cpu()
 
 # USER: Acquisition function API:
 #   Inputs: X (all possible candidates), samp_x, samp_y, gp model, OPT: xi (extra constant), batch size, verbose
@@ -137,28 +134,28 @@ def acq_optimize_discrete(
 
 def thompson_sampling(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2, embedded=False):
     #start = time.time()
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    #device = 'cpu'
+    self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    #self.device = 'cpu'
 
     #converting the model to double is a naive fix, might be a better way to do this?
-    model, samp_x, samp_y = model.double().to(device), samp_x.to(device), samp_y.to(device)
+    model, samp_x, samp_y = model.double().to(self.device), samp_x.to(self.device), samp_y.to(self.device)
     # for linear kernel only
     samp_y = torch.reshape(samp_y, (-1, 1))
     # TODO: have model output this, since won't be the same across.
     if model.lin:
-        noise = model.get_kernel_noise().to(device).double()
+        noise = model.get_kernel_noise().to(self.device).double()
         if model.dkl:
             samp_x = samp_x
             # x is only nn embedding
-            nn_x = model.embedding(samp_x.double()).to(device)
+            nn_x = model.embedding(samp_x.double()).to(self.device)
         else:
-            nn_x = samp_x.double()#.to(device)
+            nn_x = samp_x.double()#.to(self.device)
     else:
         # gp = gp.cpu()
         #need to set self.train_inputs to the embedding, not the original
         if model.dkl:
-            model = copy.copy(model).to(device)
-            inputs = model.train_inputs[0].to(device)
+            model = copy.copy(model).to(self.device)
+            inputs = model.train_inputs[0].to(self.device)
             nn_x = model.embedding(inputs)
             model.train_inputs = (nn_x,)
 
@@ -181,7 +178,7 @@ def thompson_sampling(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2, 
 
         def max_obj(x):
             return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
-            #return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(device))
+            #return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(self.device))
         
     if not embedded and model.dkl:
         # start= time.time()
