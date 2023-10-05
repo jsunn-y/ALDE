@@ -90,7 +90,11 @@ class Model:
     ):
         if reset:
             self.model_args.train_x, self.model_args.train_y = train_x, train_y
-            self.model = networks.GP(**self.model_args)
+            if 'BOTORCH' in self.mtype:
+                self.model = networks.BoTorchGP(**self.model_args)
+            else:
+                self.model = networks.GP(**self.model_args)
+                
             train_x, train_y = train_x.to(self.device).double(), train_y.to(self.device).double()
             self.model.likelihood, self.model = self.model.likelihood.to(self.device).double(), self.model.to(self.device).double()
         

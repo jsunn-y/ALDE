@@ -22,11 +22,14 @@ class Acquisition:
         -@param: acq_fn, takes in prior distribution and builds function
         -@param: next_query, optimizes acq_fn and returns next x val.
         """
-        self.gpu = torch.cuda.is_available()
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.gpu = False
+        self.device = 'cpu'
+
+        # self.gpu = torch.cuda.is_available()
+        # self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.acq = acq_fn_name
-        self.queries_x = queries_x.double()
+        self.queries_x = queries_x.double().to(self.device)
         self.norm_y = norm_y.double()
         self.model = model.double().to(self.device)
         self.disc_X = disc_X.double()
@@ -69,7 +72,7 @@ class Acquisition:
         Updates self.preds to be the acquisition function values at each point.
         """
         #for botorch acquisition functions
-        if self.acq.upper() in ('TS', 'QEI'):
+        if self.acq.upper() in ('TS'):
             if self.model.lin and self.acq.upper() == 'TS':
                 noise = self.model.get_kernel_noise().to(self.device).double()
                 if self.model.dkl:
@@ -88,7 +91,6 @@ class Acquisition:
                 else:
                     model.train_inputs = (self.model.train_inputs[0],)
                 
-
                 if self.acq.upper() == 'TS':
                     #only needs train inputs, train outputs, and covariance, likelihood
                     gp_sample = get_gp_samples(
@@ -97,170 +99,173 @@ class Acquisition:
                             n_samples=1,
                             num_rff_features=1000,
                     )
-                    acquisition_function = PosteriorMean(model=gp_sample)
-                elif self.acq.upper() == 'QEI':
-                    sampler = botorch.sampling.SobolQMCNormalSampler(128)
-                    acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
-                        model=model,
+                    self.acquisition_function = PosteriorMean(model=gp_sample)
+                
+                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=self.max_obj).cpu().detach().double()
+
+        #self implemented acquisition functions
+        else:
+            if self.acq.upper() == 'QEI': #QEI
+                sampler = botorch.sampling.SobolQMCNormalSampler(128)
+                self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
+                        model=self.model,
                         X_baseline=self.queries_x,
                         sampler=sampler.to(self.device),
                         prune_baseline=True,
                     )
+                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=self.max_obj).cpu().detach().double()
 
-                def max_obj(x):
-                    return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
-                
-                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=max_obj).cpu().detach().double()
+            else: #UCB or Greedy
+                if self.gpu: 
+                    self.model = self.model.cuda()
+                    # so don't put too much on gpu at once
+                    with gpytorch.settings.fast_pred_var(), torch.no_grad():
+                        mu, sigma = self.model.predict_batched_gpu(self.embeddings, batch_size=1000)
+                else:
+                    mu, sigma = self.model.predict(self.embeddings)
 
-        #self implemented acquisition functions
-        else:
-            if self.gpu: 
-                self.model = self.model.cuda()
-                # so don't put too much on gpu at once
-                with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                    mu, sigma = self.model.predict_batched_gpu(self.embeddings, batch_size=1000)
-            else:
-                mu, sigma = self.model.predict(self.embeddings)
+                if self.acq.upper() == 'UCB':
+                    delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                    self.preds = mu + delta
+                elif self.acq.upper() == 'GREEDY':
+                    self.preds = mu.cpu()
 
-            if self.acq.upper() == 'UCB':
-                delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
-                self.preds = mu + delta
-            elif self.acq.upper() == 'GREEDY':
-                self.preds = mu.cpu()
+    def max_obj(self, x):
+        return self.acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
 
 # USER: Acquisition function API:
 #   Inputs: X (all possible candidates), samp_x, samp_y, gp model, OPT: xi (extra constant), batch size, verbose
 #   Outputs: acq fn value on all X.
 
-def thompson_sampling(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2, embedded=False):
-    #start = time.time()
-    self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    #self.device = 'cpu'
+# def thompson_sampling(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2, embedded=False):
+#     #start = time.time()
+#     self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+#     #self.device = 'cpu'
 
-    #converting the model to double is a naive fix, might be a better way to do this?
-    model, samp_x, samp_y = model.double().to(self.device), samp_x.to(self.device), samp_y.to(self.device)
-    # for linear kernel only
-    samp_y = torch.reshape(samp_y, (-1, 1))
-    # TODO: have model output this, since won't be the same across.
-    if model.lin:
-        noise = model.get_kernel_noise().to(self.device).double()
-        if model.dkl:
-            samp_x = samp_x
-            # x is only nn embedding
-            nn_x = model.embedding(samp_x.double()).to(self.device)
-        else:
-            nn_x = samp_x.double()#.to(self.device)
-    else:
-        # gp = gp.cpu()
-        #need to set self.train_inputs to the embedding, not the original
-        if model.dkl:
-            model = copy.copy(model).to(self.device)
-            inputs = model.train_inputs[0].to(self.device)
-            nn_x = model.embedding(inputs)
-            model.train_inputs = (nn_x,)
+#     #converting the model to double is a naive fix, might be a better way to do this?
+#     model, samp_x, samp_y = model.double().to(self.device), samp_x.to(self.device), samp_y.to(self.device)
+#     # for linear kernel only
+#     samp_y = torch.reshape(samp_y, (-1, 1))
+#     # TODO: have model output this, since won't be the same across.
+#     if model.lin:
+#         noise = model.get_kernel_noise().to(self.device).double()
+#         if model.dkl:
+#             samp_x = samp_x
+#             # x is only nn embedding
+#             nn_x = model.embedding(samp_x.double()).to(self.device)
+#         else:
+#             nn_x = samp_x.double()#.to(self.device)
+#     else:
+#         # gp = gp.cpu()
+#         #need to set self.train_inputs to the embedding, not the original
+#         if model.dkl:
+#             model = copy.copy(model).to(self.device)
+#             inputs = model.train_inputs[0].to(self.device)
+#             nn_x = model.embedding(inputs)
+#             model.train_inputs = (nn_x,)
 
-            #line below doesn't seem to make a difference
-            #model.train_inputs = (model.embed_batched_gpu(inputs),)
-        else:
-            #is this the same as samp_x?
-            #nn_x = samp_x.double()
+#             #line below doesn't seem to make a difference
+#             #model.train_inputs = (model.embed_batched_gpu(inputs),)
+#         else:
+#             #is this the same as samp_x?
+#             #nn_x = samp_x.double()
 
-            model.train_inputs = (model.train_inputs[0],)
-        #only needs train inputs, train outputs, and covariance, likelihood
-        gp_sample = get_gp_samples(
-                model=model,
-                num_outputs=1,
-                n_samples=1,
-                num_rff_features=1000,
-        )
+#             model.train_inputs = (model.train_inputs[0],)
+#         #only needs train inputs, train outputs, and covariance, likelihood
+#         gp_sample = get_gp_samples(
+#                 model=model,
+#                 num_outputs=1,
+#                 n_samples=1,
+#                 num_rff_features=1000,
+#         )
 
-        acquisition_function = PosteriorMean(model=gp_sample)
+#         acquisition_function = PosteriorMean(model=gp_sample)
 
-        def max_obj(x):
-            return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
-            #return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(self.device))
+#         def max_obj(x):
+#             return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
+#             #return acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])).to(self.device))
         
-    if not embedded and model.dkl:
-        # start= time.time()
-        embeddings = model.embed_batched_gpu(X, batch_size=batch)
-        # print('embedding time', time.time() - start)
-    else:
-        embeddings = X
+#     if not embedded and model.dkl:
+#         # start= time.time()
+#         embeddings = model.embed_batched_gpu(X, batch_size=batch)
+#         # print('embedding time', time.time() - start)
+#     else:
+#         embeddings = X
 
-    # start= time.time()
-    acq = model.eval_acquisition_batched_gpu(embeddings, batch_size=batch, f=max_obj)
-    # print('acquisition time', time.time() - start)
+#     # start= time.time()
+#     acq = model.eval_acquisition_batched_gpu(embeddings, batch_size=batch, f=max_obj)
+#     # print('acquisition time', time.time() - start)
 
-    #print(time.time() - start)
-    return acq.cpu().double(), embeddings
-
-
-def upper_conf_bound(X, samp_x, samp_y, model, beta, batch=1000, verbose=2):
-    """
-    Computes UCB at points X, where beta represents exploration/exploitation tradeoff.
-    UCB(x) = mu(x) + sqrt(beta) * sigma(x)
-    """
-    #start = time.time()
-    if gpu: 
-        model = model.cuda()
-        # so don't put too much on gpu at once
-        with gpytorch.settings.fast_pred_var(), torch.no_grad():
-            mu, sigma = model.predict_batched_gpu(X, batch_size=batch)
-    else:
-        mu, sigma = model.predict(X)
-
-    delta = (beta * torch.ones_like(mu)).sqrt() * sigma
-    #print(time.time() - start)
-    return mu + delta
-
-def greedy(X, samp_x, samp_y, model, beta, batch=1000, verbose=2):
-    '''
-    Computes greedy acquisition function at points X
-    '''
-    #start = time.time()
-    if gpu: 
-        model = model.cuda()
-        # so don't put too much on gpu at once
-        with gpytorch.settings.fast_pred_var(), torch.no_grad():
-            mu, _ = model.predict_batched_gpu(X, batch_size=batch)
-    else:
-        mu, _ = model.predict(X)
-    #print(time.time() - start)
-    return mu.cpu()
+#     #print(time.time() - start)
+#     return acq.cpu().double(), embeddings
 
 
-# TODO: batch not implemented here yet
-def expected_improvement(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2):
-    """
-    Computes the EI at points X.
-    EI(x) = E(max(y - best_f, 0)), y ~ f(x)
-    Args:
-        X: Points at which EI shall be computed (m x d).
-        X_sample: Sample locations (n x d).
-        Y_sample: Sample values (n x 1).
-        model: A GaussianProcessRegressor fitted to samples.
-        xi: Exploitation-exploration trade-off parameter.
-    Returns:
-        Expected improvements at points X.
-    """
+# def upper_conf_bound(X, samp_x, samp_y, model, beta, batch=1000, verbose=2):
+#     """
+#     Computes UCB at points X, where beta represents exploration/exploitation tradeoff.
+#     UCB(x) = mu(x) + sqrt(beta) * sigma(x)
+#     """
+#     #start = time.time()
+#     if gpu: 
+#         model = model.cuda()
+#         # so don't put too much on gpu at once
+#         with gpytorch.settings.fast_pred_var(), torch.no_grad():
+#             mu, sigma = model.predict_batched_gpu(X, batch_size=batch)
+#     else:
+#         mu, sigma = model.predict(X)
+
+#     delta = (beta * torch.ones_like(mu)).sqrt() * sigma
+#     #print(time.time() - start)
+#     return mu + delta
+
+# def greedy(X, samp_x, samp_y, model, beta, batch=1000, verbose=2):
+#     '''
+#     Computes greedy acquisition function at points X
+#     '''
+#     #start = time.time()
+#     if gpu: 
+#         model = model.cuda()
+#         # so don't put too much on gpu at once
+#         with gpytorch.settings.fast_pred_var(), torch.no_grad():
+#             mu, _ = model.predict_batched_gpu(X, batch_size=batch)
+#     else:
+#         mu, _ = model.predict(X)
+#     #print(time.time() - start)
+#     return mu.cpu()
+
+
+# # TODO: batch not implemented here yet
+# def expected_improvement(X, samp_x, samp_y, model, xi=None, batch=1000, verbose=2):
+#     """
+#     Computes the EI at points X.
+#     EI(x) = E(max(y - best_f, 0)), y ~ f(x)
+#     Args:
+#         X: Points at which EI shall be computed (m x d).
+#         X_sample: Sample locations (n x d).
+#         Y_sample: Sample values (n x 1).
+#         model: A GaussianProcessRegressor fitted to samples.
+#         xi: Exploitation-exploration trade-off parameter.
+#     Returns:
+#         Expected improvements at points X.
+#     """
     
-    #TODO: if not gpu
-    if gpu:
-        model = model.cuda()
-        samp_x = samp_x.cuda()
-    with gpytorch.settings.fast_pred_var(), torch.no_grad():
-        mu, sigma = model.predict_batched_gpu(X, batch_size=1000)
-        f_best_seen = torch.max(
-            model(samp_x).mean.cpu()
-        )  # not quite correct for noisy obs
-    impr = mu - f_best_seen  # - xi
-    Z = impr / sigma
-    normal = torch.distributions.Normal(torch.zeros_like(Z), torch.ones_like(Z))
-    cdf = normal.cdf(Z)
-    pdf = torch.exp(normal.log_prob(Z))
-    # exploitation term + exploration term
-    ei = impr * cdf + sigma * pdf
-    # det. set to 0--is this necessary?
-    ei[sigma == 0.0] = 0.0
-    return ei
+#     #TODO: if not gpu
+#     if gpu:
+#         model = model.cuda()
+#         samp_x = samp_x.cuda()
+#     with gpytorch.settings.fast_pred_var(), torch.no_grad():
+#         mu, sigma = model.predict_batched_gpu(X, batch_size=1000)
+#         f_best_seen = torch.max(
+#             model(samp_x).mean.cpu()
+#         )  # not quite correct for noisy obs
+#     impr = mu - f_best_seen  # - xi
+#     Z = impr / sigma
+#     normal = torch.distributions.Normal(torch.zeros_like(Z), torch.ones_like(Z))
+#     cdf = normal.cdf(Z)
+#     pdf = torch.exp(normal.log_prob(Z))
+#     # exploitation term + exploration term
+#     ei = impr * cdf + sigma * pdf
+#     # det. set to 0--is this necessary?
+#     ei[sigma == 0.0] = 0.0
+#     return ei
 

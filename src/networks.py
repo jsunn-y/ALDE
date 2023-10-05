@@ -400,7 +400,8 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         -@param: aux variable (used for smoothness constant, etc.)
         """
         self.dkl, self.cdkl = False, False
-        self.device = device
+        self.device = "cpu"
+        #self.device = device
         self.architecture = architecture
         
         self.lin = False
