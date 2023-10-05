@@ -80,8 +80,10 @@ class Model:
             self.device,
             inference_args,
         )
-
-        self.model = networks.GP(**self.model_args)
+        if 'BOTORCH' in mtype:
+            self.model = networks.BoTorchGP(**self.model_args)
+        else:
+            self.model = networks.GP(**self.model_args)
 
     def train(
         self, train_x, train_y, iter=0, track_lc=False, reset=True, dynamic_arc=None

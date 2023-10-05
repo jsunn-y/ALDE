@@ -56,7 +56,7 @@ class Acquisition:
         Embeds all of the values in disc_X using the deep NN layers, for TS acquisition. Embedding is not changed for other acquisition functions.
         Updates self.embeddings to be the embeddings of each point in disc_X.
         """
-        if self.acq.upper() == 'TS':
+        if self.model.dkl and self.acq.upper() == 'TS':
             # start= time.time()
             self.embeddings = self.model.embed_batched_gpu(self.disc_X, batch_size=1000).double()
             # print('embedding time', time.time() - start)
@@ -80,8 +80,8 @@ class Acquisition:
                     nn_x = samp_x.double()#.to(self.device)
             else:
                 #need to set self.train_inputs to the embedding, not the original
+                model = copy.copy(self.model).to(self.device)
                 if self.model.dkl:
-                    model = copy.copy(self.model).to(self.device)
                     inputs = model.train_inputs[0].to(self.device)
                     nn_x = model.embedding(inputs)
                     model.train_inputs = (nn_x,)

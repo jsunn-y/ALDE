@@ -141,8 +141,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['DKL']:
-            for acq_fn in ['QEI']: #'QEI', 'UCB','TS'
+        for mtype in  ['CDKL_BOTORCH']:
+            for acq_fn in ['TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -152,27 +152,26 @@ if __name__ == "__main__":
                 num_simult_jobs = 1
 
                 #last layer of architecture should be repeated, this gets fed to the GP
-                if mtype =='GP':
+                if 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
-                elif mtype =='DKL':
-                    if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
-                    else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
-                elif mtype == 'CDKL':
+                elif 'CDKL' in mtype:
                     if 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
                         arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
                     elif 'ESM2' in encoding:
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
-
+                elif 'DKL' in mtype:
+                    if 'onehot' in encoding:
+                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
+                    else:
+                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
                 else:
                     arc = [domain[0].size(-1), 1] #filler architecture for MLDE
 
                 #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
-                if mtype == 'MLDE':
+                if 'MLDE' in mtype:
                     fname = mtype +  '_' + str(r + 1)
                 else:
                     fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
