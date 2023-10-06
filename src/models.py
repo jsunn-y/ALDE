@@ -11,9 +11,6 @@ from src.networks import NET_ARGS, OPT_ARGS, SAMP_ARGS
 import torch
 from torch import Tensor
 
-gpu = torch.cuda.is_available()
-
-
 class Model:
     """Generic class for models, including GP and deep kernel models.
     common: init (with training, and other), train, evaluate"""
@@ -56,7 +53,7 @@ class Model:
         self.dkl = "DKL" in mtype.upper() or "CDKL" in mtype.upper()
 
         # self.path = path
-        self.device = "cuda" if gpu else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # setup model structs, likelihood
         inference_args = OPT_ARGS(lr, num_iter)
@@ -94,12 +91,11 @@ class Model:
                 self.model = networks.BoTorchGP(**self.model_args)
             else:
                 self.model = networks.GP(**self.model_args)
-                
+
             train_x, train_y = train_x.to(self.device).double(), train_y.to(self.device).double()
             self.model.likelihood, self.model = self.model.likelihood.to(self.device).double(), self.model.to(self.device).double()
         
         self.model.train_model(train_x, train_y, **self.model_args.inference_args)
-        
 
         return None
 

@@ -22,11 +22,8 @@ class Acquisition:
         -@param: acq_fn, takes in prior distribution and builds function
         -@param: next_query, optimizes acq_fn and returns next x val.
         """
-        self.gpu = False
-        self.device = 'cpu'
-
-        # self.gpu = torch.cuda.is_available()
-        # self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.gpu = torch.cuda.is_available()
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.acq = acq_fn_name
         self.queries_x = queries_x.double().to(self.device)
@@ -61,7 +58,7 @@ class Acquisition:
         """
         if self.model.dkl and self.acq.upper() == 'TS':
             # start= time.time()
-            self.embeddings = self.model.embed_batched_gpu(self.disc_X, batch_size=1000).double()
+            self.embeddings = self.model.embed_batched_gpu(self.disc_X).double()
             # print('embedding time', time.time() - start)
         else:
             self.embeddings = self.disc_X
@@ -101,10 +98,11 @@ class Acquisition:
                     )
                     self.acquisition_function = PosteriorMean(model=gp_sample)
                 
-                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=self.max_obj).cpu().detach().double()
+                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
 
         #self implemented acquisition functions
         else:
+            #TODO: fix explosion in memory usage but only the second time its trained
             if self.acq.upper() == 'QEI': #QEI
                 sampler = botorch.sampling.SobolQMCNormalSampler(128)
                 self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
@@ -113,14 +111,14 @@ class Acquisition:
                         sampler=sampler.to(self.device),
                         prune_baseline=True,
                     )
-                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, batch_size=1000, f=self.max_obj).cpu().detach().double()
+                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
 
             else: #UCB or Greedy
                 if self.gpu: 
                     self.model = self.model.cuda()
                     # so don't put too much on gpu at once
                     with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                        mu, sigma = self.model.predict_batched_gpu(self.embeddings, batch_size=1000)
+                        mu, sigma = self.model.predict_batched_gpu(self.embeddings)
                 else:
                     mu, sigma = self.model.predict(self.embeddings)
 

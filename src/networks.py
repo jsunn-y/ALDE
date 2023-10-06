@@ -400,8 +400,9 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         -@param: aux variable (used for smoothness constant, etc.)
         """
         self.dkl, self.cdkl = False, False
-        self.device = "cpu"
-        #self.device = device
+        self.device = device
+        self.batch_size = 1000
+        
         self.architecture = architecture
         
         self.lin = False
@@ -500,26 +501,26 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         self.likelihood.eval()
         return None
 
-    def predict_batched_gpu(self, X, batch_size=1000):
+    def predict_batched_gpu(self, X):
         mu, sigma = [], []
-        for n in range(0, X.shape[0], batch_size):
+        for n in range(0, X.shape[0], self.batch_size):
             # TODO: forward gives prior, model uses posterior
-            mvn = self(X[n : n + batch_size].to(self.device))
+            mvn = self(X[n : n + self.batch_size].to(self.device))
             mu.append(mvn.mean.cpu())
             sigma.append(mvn.stddev.cpu())
         return torch.cat(mu, 0), torch.cat(sigma, 0)
 
-    def embed_batched_gpu(self, X, batch_size=1000):
+    def embed_batched_gpu(self, X):
         emb = torch.zeros((X.shape[0], self.architecture[-1]))
-        for n in range(0, X.shape[0], batch_size):
-            emb[n:n+batch_size, :] = self.embedding(X[n : n + batch_size].to(self.device)).to(self.device)
+        for n in range(0, X.shape[0], self.batch_size):
+            emb[n:n+self.batch_size, :] = self.embedding(X[n : n + self.batch_size].to(self.device)).to(self.device)
         # print(emb[0].shape)
         return emb
 
-    def eval_acquisition_batched_gpu(self, X, batch_size=1000, f=(lambda x: x)):
+    def eval_acquisition_batched_gpu(self, X, f=(lambda x: x)):
         acq = []
-        for n in range(0, X.shape[0], batch_size):
-            acq.append(f(X[n : n + batch_size].to(self.device)).to(self.device))
+        for n in range(0, X.shape[0], self.batch_size):
+            acq.append(f(X[n : n + self.batch_size].to(self.device)).to(self.device))
         # print(emb[0].shape)
         return torch.cat(acq, 0)
     
