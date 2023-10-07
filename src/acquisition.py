@@ -14,8 +14,7 @@ import src.utils as utils
 
 class Acquisition:
     """Generic class for acquisition functions that includes the function and
-    its optimizer. After initialization, call get_next_query() to obtain the
-    suggested next query input."""
+    its optimizer."""
 
     def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi):
         """Initializes Acquisition object.
@@ -65,7 +64,7 @@ class Acquisition:
        
     def get_preds(self):
         """
-        Passes the encoded values in dix_X through the acquisition function.
+        Passes the encoded values in disc_X through the acquisition function.
         Updates self.preds to be the acquisition function values at each point.
         """
         #for botorch acquisition functions

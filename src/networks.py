@@ -327,21 +327,26 @@ class GP(gpytorch.models.ExactGP, GenericModel):
         # TODO: add a verbose option?
         self.train()
         self.likelihood.train()
-        if self.feature_extractor != None:
-            self.feature_extractor.train()
-        #adam is a first order optimization, LBFGSB is a better optimization but requires a hessian
-        optimizer = torch.optim.Adam(self.get_params(), lr=lr)
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
         
-        with gpytorch.settings.fast_pred_var(), gpytorch.settings.use_toeplitz(False):
-            for iter in range(num_iter):
-                optimizer.zero_grad()
-                # TODO: shouldn't be forward
-                preds = self(X)
-                loss = -mll(preds, Y)
-                loss.backward()
-                #print(loss)
-                optimizer.step()
+        #if not self.dkl:
+        if False:
+            self.likelihood, self = self.likelihood.cpu(), self.cpu()
+            fit_gpytorch_mll(mll)
+        else:
+            if self.feature_extractor != None:
+                self.feature_extractor.train()
+            #adam is a first order optimization, LBFGSB is a better optimization but requires a hessian
+            optimizer = torch.optim.Adam(self.get_params(), lr=lr)
+            with gpytorch.settings.fast_pred_var(), gpytorch.settings.use_toeplitz(False):
+                for iter in range(num_iter):
+                    optimizer.zero_grad()
+                    # TODO: shouldn't be forward
+                    preds = self(X)
+                    loss = -mll(preds, Y)
+                    loss.backward()
+                    print("Loss: " + str(loss))
+                    optimizer.step()
 
         if self.feature_extractor != None:
             self.feature_extractor.eval()
@@ -401,7 +406,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         """
         self.dkl, self.cdkl = False, False
         self.device = device
-        self.batch_size = 1000
+        self.gpu_batch_size = 1000
         
         self.architecture = architecture
         
@@ -494,6 +499,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                     preds = self(X)
                     loss = -mll(preds, Y)
                     loss.backward()
+                    print("Loss: " + str(loss))
                     optimizer.step()
             self.feature_extractor.eval()
 
@@ -503,24 +509,24 @@ class BoTorchGP(SingleTaskGP, GenericModel):
 
     def predict_batched_gpu(self, X):
         mu, sigma = [], []
-        for n in range(0, X.shape[0], self.batch_size):
+        for n in range(0, X.shape[0], self.gpu_batch_size):
             # TODO: forward gives prior, model uses posterior
-            mvn = self(X[n : n + self.batch_size].to(self.device))
+            mvn = self(X[n : n + self.gpu_batch_size].to(self.device))
             mu.append(mvn.mean.cpu())
             sigma.append(mvn.stddev.cpu())
         return torch.cat(mu, 0), torch.cat(sigma, 0)
 
     def embed_batched_gpu(self, X):
         emb = torch.zeros((X.shape[0], self.architecture[-1]))
-        for n in range(0, X.shape[0], self.batch_size):
-            emb[n:n+self.batch_size, :] = self.embedding(X[n : n + self.batch_size].to(self.device)).to(self.device)
+        for n in range(0, X.shape[0], self.gpu_batch_size):
+            emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device)
         # print(emb[0].shape)
         return emb
 
     def eval_acquisition_batched_gpu(self, X, f=(lambda x: x)):
         acq = []
-        for n in range(0, X.shape[0], self.batch_size):
-            acq.append(f(X[n : n + self.batch_size].to(self.device)).to(self.device))
+        for n in range(0, X.shape[0], self.gpu_batch_size):
+            acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device))
         # print(emb[0].shape)
         return torch.cat(acq, 0)
     
