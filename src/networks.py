@@ -387,6 +387,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         p_dropout=0,
         inference_args=None,
         device='cuda',
+	use_own_default_likelihood=False,
         *_,
         **__,
     ):
@@ -438,6 +439,9 @@ class BoTorchGP(SingleTaskGP, GenericModel):
             # input_transform=input_transform if not dkl else None,
             outcome_transform=Standardize(m=1),
         )
+
+	if not use_own_default_likelihood:
+            self.likelihood = likelihood
 
         if self.dkl:
             if self.cdkl:
