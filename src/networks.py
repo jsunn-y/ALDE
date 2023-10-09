@@ -251,6 +251,7 @@ class GP(gpytorch.models.ExactGP, GenericModel):
         self.dkl, self.cdkl = False, False
         self.device = device
         self.architecture = architecture
+        self.gpu_batch_size = 1000
 
         # TODO: remove self.lin, idt necessary anymore?
         self.lin, self.feature_extractor = False, None
@@ -357,26 +358,26 @@ class GP(gpytorch.models.ExactGP, GenericModel):
     def get_kernel_noise(self):
         return self.likelihood.noise.cpu()
 
-    def predict_batched_gpu(self, X, batch_size=1000):
+    def predict_batched_gpu(self, X):
         mu, sigma = [], []
-        for n in range(0, X.shape[0], batch_size):
+        for n in range(0, X.shape[0], self.gpu_batch_size):
             # TODO: forward gives prior, model uses posterior
-            mvn = self(X[n : n + batch_size].to(self.device))
+            mvn = self(X[n : n + self.gpu_batch_size].to(self.device)).detach()
             mu.append(mvn.mean.cpu())
             sigma.append(mvn.stddev.cpu())
         return torch.cat(mu, 0), torch.cat(sigma, 0)
 
-    def embed_batched_gpu(self, X, batch_size=1000):
+    def embed_batched_gpu(self, X):
         emb = torch.zeros((X.shape[0], self.architecture[-1]))
-        for n in range(0, X.shape[0], batch_size):
-            emb[n:n+batch_size, :] = self.embedding(X[n : n + batch_size].to(self.device)).to(self.device)
+        for n in range(0, X.shape[0], self.gpu_batch_size):
+            emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).detach()
         # print(emb[0].shape)
         return emb
 
-    def eval_acquisition_batched_gpu(self, X, batch_size=1000, f=(lambda x: x)):
+    def eval_acquisition_batched_gpu(self, X, f=(lambda x: x)):
         acq = []
-        for n in range(0, X.shape[0], batch_size):
-            acq.append(f(X[n : n + batch_size].to(self.device)).to(self.device))
+        for n in range(0, X.shape[0], self.gpu_batch_size):
+            acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).detach())
         # print(emb[0].shape)
         return torch.cat(acq, 0)
 
@@ -518,22 +519,28 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         mu, sigma = [], []
         for n in range(0, X.shape[0], self.gpu_batch_size):
             # TODO: forward gives prior, model uses posterior
-            mvn = self(X[n : n + self.gpu_batch_size].to(self.device))
+            mvn = self(X[n : n + self.gpu_batch_size].to(self.device)).detach()
             mu.append(mvn.mean.cpu())
             sigma.append(mvn.stddev.cpu())
         return torch.cat(mu, 0), torch.cat(sigma, 0)
 
     def embed_batched_gpu(self, X):
+        # emb = torch.zeros((X.shape[0], self.architecture[-1]))
+        # for n in range(0, X.shape[0], self.gpu_batch_size):
+        #     emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device)
+        
         emb = torch.zeros((X.shape[0], self.architecture[-1]))
         for n in range(0, X.shape[0], self.gpu_batch_size):
-            emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device)
+            emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).detach()
         # print(emb[0].shape)
         return emb
 
     def eval_acquisition_batched_gpu(self, X, f=(lambda x: x)):
         acq = []
         for n in range(0, X.shape[0], self.gpu_batch_size):
-            acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device))
+            #acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device))
+            acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).detach())
+
         # print(emb[0].shape)
         return torch.cat(acq, 0)
     

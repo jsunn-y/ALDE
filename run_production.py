@@ -107,7 +107,7 @@ if __name__ == "__main__":
     for r in range(index, index + runs):
         seed = r
         kernel='RBF'
-        for mtype in  ['DKL']:
+        for mtype in  ['DKL_BOTORCH']:
             for acq_fn in ['TS']: #'EI', 'UCB','TS'
                 dropout=0
 
@@ -117,20 +117,20 @@ if __name__ == "__main__":
                 #     num_simult_jobs = 10
                 num_simult_jobs = 1
 
-                if mtype =='GP':
+                #last layer of architecture should be repeated, this gets fed to the GP
+                if 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
-                elif mtype =='DKL':
-                    if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
-                    elif 'ESM2' in encoding:
-                        arc  = [domain[0].size(-1), 1000, 200, 50, 50] #becomes DKL automatically if more than two layers
-                elif mtype == 'CDKL':
+                elif 'CDKL' in mtype:
                     if 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
                         arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
                     elif 'ESM2' in encoding:
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
-
+                elif 'DKL' in mtype:
+                    if 'onehot' in encoding:
+                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
+                    else:
+                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
                 else:

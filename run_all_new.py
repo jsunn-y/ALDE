@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'TrpB_onehot'
+    encoding = 'TrpB_onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -115,12 +115,6 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-        # TODO: switch to Sobol instead of uniform? this should be done for continuous fns, but not e.g. proteins
-        def get_initial_points(dim, n_pts, seed=0):
-            sobol = torch.quasirandom.SobolEngine(dimension=dim, scramble=True, seed=seed)
-            X_init = sobol.draw(n=n_pts).to(dtype=dtype, device=device)
-            return X_init
-
         start_x, start_y, start_indices = utils.samp_discrete(n_pseudorand_init, obj, seed)
 
         # do random search first
@@ -130,6 +124,8 @@ if __name__ == "__main__":
         else:
             randy = start_y
         temp = []
+
+        
         for n in range(budget + 96 + 1):
             m = torch.max(randy[:n + n_pseudorand_init])
             reg = torch.reshape(torch.abs(ymax - m), (1, -1))
@@ -141,8 +137,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP', 'DKL', 'CDKL']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH']
-            for acq_fn in ['UCB', 'TS']: #'QEI', 'UCB','TS'
+        for mtype in ['MLDE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
