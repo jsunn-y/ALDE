@@ -320,11 +320,12 @@ class BayesianOptimization:
                 else:
                     _ = self.surrogate.train(self.queries_x, self.norm_y, reset=self.reset, dynamic_arc=self.arc_fn(self.architecture, self.queries_y.size(0), self.budget))
             
-            if simp_reg == 0:
-                final_reg = torch.zeros(1,(self.budget-self.cost))
-                self.regret = torch.cat((self.regret,final_reg),-1)
-                if self.verbose >= 3: print(f'Regret is 0, terminating early at {self.cost}/{self.budget} budget.')
-                break
+            #don't stop early
+            # if simp_reg == 0:
+            #     final_reg = torch.zeros(1,(self.budget-self.cost))
+            #     self.regret = torch.cat((self.regret,final_reg),-1)
+            #     if self.verbose >= 3: print(f'Regret is 0, terminating early at {self.cost}/{self.budget} budget.')
+            #     break
         
         #do MLDE at the end
         #if self.cost < self.budget + 96:

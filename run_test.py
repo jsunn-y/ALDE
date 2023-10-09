@@ -141,8 +141,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['GP']:
-            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
+        for mtype in  ['DKL']:
+            for acq_fn in ['TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:

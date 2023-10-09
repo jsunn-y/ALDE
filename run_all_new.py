@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot'
+    encoding = 'TrpB_onehot'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/GB1_onehot/'
+    subdir = path + 'results/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['GP', 'DKL', 'CDKL']:
+        for mtype in ['GP', 'DKL', 'CDKL']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH']
             for acq_fn in ['UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 

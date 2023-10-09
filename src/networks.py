@@ -345,7 +345,7 @@ class GP(gpytorch.models.ExactGP, GenericModel):
                     preds = self(X)
                     loss = -mll(preds, Y)
                     loss.backward()
-                    print("Loss: " + str(loss))
+                    #print("Loss: " + str(loss))
                     optimizer.step()
 
         if self.feature_extractor != None:
@@ -392,7 +392,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         p_dropout=0,
         inference_args=None,
         device='cuda',
-	use_own_default_likelihood=False,
+	    use_own_default_likelihood=False,
         *_,
         **__,
     ):
@@ -444,8 +444,8 @@ class BoTorchGP(SingleTaskGP, GenericModel):
             # input_transform=input_transform if not dkl else None,
             outcome_transform=Standardize(m=1),
         )
-
-	if not use_own_default_likelihood:
+        
+        if not use_own_default_likelihood:
             self.likelihood = likelihood
 
         if self.dkl:
@@ -490,11 +490,13 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         self.likelihood.train()
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
 
-        if not self.dkl:
+        if False:
+        # if not self.dkl:
             self.likelihood, self = self.likelihood.cpu(), self.cpu()
             fit_gpytorch_mll(mll)
         else:
-            self.feature_extractor.train()
+            if self.feature_extractor != None:
+                self.feature_extractor.train()
             optimizer = torch.optim.Adam(self.get_params(), lr=lr)
             with gpytorch.settings.fast_pred_var(), gpytorch.settings.use_toeplitz(False):
                 for iter in range(num_iter):
@@ -503,9 +505,10 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                     preds = self(X)
                     loss = -mll(preds, Y)
                     loss.backward()
-                    print("Loss: " + str(loss))
+                    #print("Loss: " + str(loss))
                     optimizer.step()
-            self.feature_extractor.eval()
+            if self.feature_extractor != None:
+                self.feature_extractor.eval()
 
         self.eval()
         self.likelihood.eval()

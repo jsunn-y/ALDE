@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math, time, copy
 import random
+import os
 
 import gpytorch
 import numpy as np
@@ -58,6 +59,8 @@ class Acquisition:
         if self.model.dkl and self.acq.upper() == 'TS':
             # start= time.time()
             self.embeddings = self.model.embed_batched_gpu(self.disc_X).double()
+            print(os.getcwd())
+            torch.save(self.embeddings, 'embeddings.pt')
             # print('embedding time', time.time() - start)
         else:
             self.embeddings = self.disc_X
