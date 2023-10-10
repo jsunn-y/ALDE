@@ -134,6 +134,9 @@ class Production(Objective):
         assert encoding == 'onehot'
         self.all_combos = generate_all_combos(nsites)
         self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
+
+        np.save("combos.npy", np.array(train_combos + self.test_combos))
+
         self.Xtest = generate_onehot(self.test_combos)
         self.Xtest = torch.reshape(self.Xtest, (self.Xtest.shape[0], -1))
         self.ytest = torch.zeros(len(self.test_combos))

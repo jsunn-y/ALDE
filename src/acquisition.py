@@ -60,7 +60,7 @@ class Acquisition:
             # start= time.time()
             self.embeddings = self.model.embed_batched_gpu(self.disc_X).double()
             print(os.getcwd())
-            torch.save(self.embeddings, 'embeddings.pt')
+            #torch.save(self.embeddings, 'embeddings.pt')
             # print('embedding time', time.time() - start)
         else:
             self.embeddings = self.disc_X

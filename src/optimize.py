@@ -297,7 +297,6 @@ class BayesianOptimization:
                             acq.get_preds()
                     
                     x, ypred, idx = acq.get_next_query(self.queries_x, self.norm_y)
-                    print('one query done')
 
                         #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
 

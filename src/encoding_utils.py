@@ -101,8 +101,8 @@ def generate_all_combos(nsites):
     # Generate all possible combinations
     combos = itertools.product(ALL_AAS, repeat=nsites)
     
-    # Convert to a list
-    combos = list(combos)
+    # Convert to a list and merge strings
+    combos = [''.join(combo) for combo in combos]
     
     # Return the list
     return combos
