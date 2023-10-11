@@ -43,12 +43,15 @@ class Acquisition:
         ind = torch.argmax(self.preds)
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
         acq_val = self.preds[ind].detach().double()
+        print("Best acq val" + str(ind))
         best_idx = ind
         
         # if maximizer already queried, take the "next best"
         if utils.find_x(best_x, samp_x.cpu()):
             print('Best already taken, finding next best')
             best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
+            print("Replacement acq val" + str(best_idx))
+            
         return best_x, acq_val, best_idx
 
 
@@ -104,40 +107,39 @@ class Acquisition:
                 self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
 
         #self implemented acquisition functions
-        else:
-            #TODO: fix explosion in memory usage but only the second time its trained
-            if self.acq.upper() == 'QEI': #QEI
-                if X_pending is not None:
-                    X_pending = X_pending.to(self.device)
-                    print(X_pending.shape)
+        elif self.acq.upper() == 'QEI': 
+            
+            if X_pending is not None:
+                X_pending = X_pending.to(self.device)
+                print(X_pending.shape)
 
-                sampler = botorch.sampling.SobolQMCNormalSampler(128)
-                self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
-                        model=self.model,
-                        X_baseline=self.queries_x,
-                        sampler=sampler.to(self.device),
-                        prune_baseline=True,
-                        X_pending=X_pending
-                    )
-                #specificy sequential and say what was already appended
-                #need to add an extra dimension to specify that each batch is a single point
-                self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
-                print(self.preds[-10:])
+            sampler = botorch.sampling.SobolQMCNormalSampler(128)
+            self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
+                    model=self.model,
+                    X_baseline=self.queries_x,
+                    sampler=sampler.to(self.device),
+                    prune_baseline=True,
+                    X_pending=X_pending
+                )
+            #specificy sequential and say what was already appended
+            #need to add an extra dimension to specify that each batch is a single point
+            self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
+            #print(self.preds[-10:])
 
-            else: #UCB or Greedy
-                if self.gpu: 
-                    self.model = self.model.cuda()
-                    # so don't put too much on gpu at once
-                    with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                        mu, sigma = self.model.predict_batched_gpu(self.embeddings)
-                else:
-                    mu, sigma = self.model.predict(self.embeddings)
+        else: #UCB or Greedy
+            if self.gpu: 
+                self.model = self.model.cuda()
+                # so don't put too much on gpu at once
+                with gpytorch.settings.fast_pred_var(), torch.no_grad():
+                    mu, sigma = self.model.predict_batched_gpu(self.embeddings)
+            else:
+                mu, sigma = self.model.predict(self.embeddings)
 
-                if self.acq.upper() == 'UCB':
-                    delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
-                    self.preds = mu + delta
-                elif self.acq.upper() == 'GREEDY':
-                    self.preds = mu.cpu()
+            if self.acq.upper() == 'UCB':
+                delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                self.preds = mu + delta
+            elif self.acq.upper() == 'GREEDY':
+                self.preds = mu.cpu()
 
     def max_obj(self, x):
         #add the extra dimension to specify qbatch is only 1

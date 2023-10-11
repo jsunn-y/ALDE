@@ -374,7 +374,8 @@ class BayesianOptimization:
             idx = torch.reshape(idx, (1, 1))[0]
         
         #print(x_ind.shape)
-        self.X_pending = self.queries_x[-self.index-1:]
+        self.X_pending = self.queries_x[-self.index-1:] #new points from the batch
+
         self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
         self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
         self.indices = torch.cat((self.indices, idx.double()), dim=0)
