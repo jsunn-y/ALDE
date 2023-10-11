@@ -47,6 +47,7 @@ class Acquisition:
         
         # if maximizer already queried, take the "next best"
         if utils.find_x(best_x, samp_x.cpu()):
+            print('Best already taken, finding next best')
             best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
         return best_x, acq_val, best_idx
 
@@ -65,7 +66,7 @@ class Acquisition:
         else:
             self.embeddings = self.disc_X
        
-    def get_preds(self):
+    def get_preds(self, X_pending):
         """
         Passes the encoded values in disc_X through the acquisition function.
         Updates self.preds to be the acquisition function values at each point.
@@ -75,7 +76,7 @@ class Acquisition:
             if self.model.lin and self.acq.upper() == 'TS':
                 noise = self.model.get_kernel_noise().to(self.device).double()
                 if self.model.dkl:
-                    samp_x = samp_x
+                    samp_x = samp_x #not sure what is going on heere, its a relic
                     # x is only nn embedding
                     nn_x = self.model.embedding(samp_x.double()).to(self.device)
                 else:
@@ -106,14 +107,22 @@ class Acquisition:
         else:
             #TODO: fix explosion in memory usage but only the second time its trained
             if self.acq.upper() == 'QEI': #QEI
+                if X_pending is not None:
+                    X_pending = X_pending.to(self.device)
+                    print(X_pending.shape)
+
                 sampler = botorch.sampling.SobolQMCNormalSampler(128)
                 self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
                         model=self.model,
                         X_baseline=self.queries_x,
                         sampler=sampler.to(self.device),
                         prune_baseline=True,
+                        X_pending=X_pending
                     )
+                #specificy sequential and say what was already appended
+                #need to add an extra dimension to specify that each batch is a single point
                 self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
+                print(self.preds[-10:])
 
             else: #UCB or Greedy
                 if self.gpu: 
@@ -131,6 +140,8 @@ class Acquisition:
                     self.preds = mu.cpu()
 
     def max_obj(self, x):
+        #add the extra dimension to specify qbatch is only 1
+        #works with submodular optimization
         return self.acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
 
 # USER: Acquisition function API:

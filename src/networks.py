@@ -458,6 +458,8 @@ class BoTorchGP(SingleTaskGP, GenericModel):
     def forward(self, x: Tensor) -> gpytorch.distributions.MultivariateNormal:
         # We're first putting our data through a deep net (feature extractor)
         emb = self.embedding(x)
+        #something is wrong with the shape here in qEI
+        
         mean_x = self.mean_module(emb)
         covar_x = self.covar_module(emb)
         return gdist.MultivariateNormal(mean_x, covar_x)
@@ -469,9 +471,9 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                  #unflatten the array for CNN
                  n_sites = self.architecture[0]
                  n_tokens = int(x.shape[1]/n_sites)
-                 
                  x = torch.transpose(torch.reshape(x, (x.shape[0], n_sites, n_tokens)), 1, 2)
-                 
+            
+            # print(x.shape)     
             return self.feature_extractor(x)
         else:
             return x
@@ -519,7 +521,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         mu, sigma = [], []
         for n in range(0, X.shape[0], self.gpu_batch_size):
             # TODO: forward gives prior, model uses posterior
-            mvn = self(X[n : n + self.gpu_batch_size].to(self.device)).detach()
+            mvn = self(X[n : n + self.gpu_batch_size].to(self.device))
             mu.append(mvn.mean.cpu())
             sigma.append(mvn.stddev.cpu())
         return torch.cat(mu, 0), torch.cat(sigma, 0)

@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # USER: create objective fn in objectives.py
     encoding = 'onehot'
-    df = pd.read_csv('test_fivesite.csv')
+    df = pd.read_csv('/home/jyang4/repos/data/Pgb/test_fivesite.csv')
     n_samples = len(df)
     obj = objectives.Production(df, encoding)
     #TODO: output the order of the combos so that the indices are specific
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         seed = r
         kernel='RBF'
         for mtype in  ['DKL_BOTORCH']:
-            for acq_fn in ['TS']: #'EI', 'UCB','TS'
+            for acq_fn in ['UCB', 'TS']: #'EI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:

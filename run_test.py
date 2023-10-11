@@ -141,7 +141,7 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in  ['GP_BOTORCH']:
+        for mtype in  ['DKL_BOTORCH']:
             for acq_fn in ['QEI']: #'QEI', 'UCB','TS'
                 dropout=0
 

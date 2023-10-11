@@ -272,7 +272,7 @@ class BayesianOptimization:
         # main loop; form and optimize acq_func to find next query x based on model (prior)
         while self.cost < self.budget:
             
-            for index in range(self.batch_size):
+            for self.index in range(self.batch_size):
 
                 #loop through each of the models and acquisition function types
                 if self.mtype == 'MLDE':
@@ -283,20 +283,21 @@ class BayesianOptimization:
                         idx = idx_list
                     else:
                         #check the dimension of x here
-                        x = x_list[index].reshape(1,-1)
-                        ypred = ypred_list[index]
-                        idx = idx_list[index]
+                        x = x_list[self.index].reshape(1,-1)
+                        ypred = ypred_list[self.index]
+                        idx = idx_list[self.index]
                 else:
                     #start = time.time()
-                    if index == 0:
+                    if self.index == 0:
                         acq = acquisition.Acquisition(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi)
                         acq.get_embedding()
-                        acq.get_preds()
+                        acq.get_preds(None)
                     else:
-                        if self.acq_fn == 'TS':
-                            acq.get_preds()
+                        if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
+                            acq.get_preds(self.X_pending)
                     
                     x, ypred, idx = acq.get_next_query(self.queries_x, self.norm_y)
+                    
 
                         #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
 
@@ -373,6 +374,7 @@ class BayesianOptimization:
             idx = torch.reshape(idx, (1, 1))[0]
         
         #print(x_ind.shape)
+        self.X_pending = self.queries_x[-self.index-1:]
         self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
         self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
         self.indices = torch.cat((self.indices, idx.double()), dim=0)

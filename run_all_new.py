@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'TrpB_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -125,7 +125,6 @@ if __name__ == "__main__":
             randy = start_y
         temp = []
 
-
         for n in range(budget + 96 + 1):
             m = torch.max(randy[:n + n_pseudorand_init])
             reg = torch.reshape(torch.abs(ymax - m), (1, -1))
@@ -137,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['QEI']: #'QEI', 'UCB','TS'
+        for mtype in ['MLDE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
