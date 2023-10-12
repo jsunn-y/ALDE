@@ -465,15 +465,28 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         return gdist.MultivariateNormal(mean_x, covar_x)
 
     def embedding(self, x: Tensor) -> Tensor:
-        # for use with TS acq
+        # for use with TS acq and QEI
+        
+        #The dimension is [1 x 1097 x 80] coming into this and I don't understand why
+
+        #main issue, there is an extra dimension that came out of here and idk why
+        #The dimension is [1000 x 97 x 80] coming into this from QEI and I don't understand why
+        # print(x.shape)
+        # x = torch.squeeze(x)
+        #print(x.shape) 
+
         if self.dkl:
+            
             if self.cdkl:
                  #unflatten the array for CNN
                  n_sites = self.architecture[0]
-                 n_tokens = int(x.shape[1]/n_sites)
-                 x = torch.transpose(torch.reshape(x, (x.shape[0], n_sites, n_tokens)), 1, 2)
-            
-            # print(x.shape)     
+                 #n_tokens = int(x.shape[1]/n_sites)
+                 n_tokens = int(x.shape[-1]/n_sites)
+                 #x = torch.transpose(torch.reshape(x, (x.shape[0], n_sites, n_tokens)), 1, 2)
+                 shape = tuple(np.append(list(x.shape[:-1]), [n_sites, n_tokens]))
+                 print(shape)
+                 x = torch.transpose(torch.reshape(x, shape), -1, -2)
+                
             return self.feature_extractor(x)
         else:
             return x
@@ -540,9 +553,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
     def eval_acquisition_batched_gpu(self, X, f=(lambda x: x)):
         acq = []
         for n in range(0, X.shape[0], self.gpu_batch_size):
-            #acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device))
             acq.append(f(X[n : n + self.gpu_batch_size].to(self.device)).detach())
-
         # print(emb[0].shape)
         return torch.cat(acq, 0)
     

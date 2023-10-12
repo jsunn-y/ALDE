@@ -23,7 +23,9 @@ class Acquisition:
         -@param: next_query, optimizes acq_fn and returns next x val.
         """
         self.gpu = torch.cuda.is_available()
+        
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        #self.device = 'cpu'
 
         self.acq = acq_fn_name
         self.queries_x = queries_x.double().to(self.device)
@@ -43,27 +45,28 @@ class Acquisition:
         ind = torch.argmax(self.preds)
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
         acq_val = self.preds[ind].detach().double()
-        print("Best acq val" + str(ind))
+        print("Best acq val" + str(acq_val))
         best_idx = ind
         
         # if maximizer already queried, take the "next best"
         if utils.find_x(best_x, samp_x.cpu()):
             print('Best already taken, finding next best')
             best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
-            print("Replacement acq val" + str(best_idx))
-            
+            print("Replacement acq val" + str(acq_val))
+
         return best_x, acq_val, best_idx
 
 
     def get_embedding(self):
         """
-        Embeds all of the values in disc_X using the deep NN layers, for TS acquisition. Embedding is not changed for other acquisition functions.
+        Embeds all of the values in disc_X using the deep NN layers, for TS acquisition with a neural network is used. Embedding is not changed for other acquisition functions.
         Updates self.embeddings to be the embeddings of each point in disc_X.
         """
+
         if self.model.dkl and self.acq.upper() == 'TS':
             # start= time.time()
             self.embeddings = self.model.embed_batched_gpu(self.disc_X).double()
-            print(os.getcwd())
+            #print(os.getcwd())
             #torch.save(self.embeddings, 'embeddings.pt')
             # print('embedding time', time.time() - start)
         else:
@@ -105,8 +108,6 @@ class Acquisition:
                     self.acquisition_function = PosteriorMean(model=gp_sample)
                 
                 self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
-
-        #self implemented acquisition functions
         elif self.acq.upper() == 'QEI': 
             
             if X_pending is not None:
@@ -119,12 +120,25 @@ class Acquisition:
                     X_baseline=self.queries_x,
                     sampler=sampler.to(self.device),
                     prune_baseline=True,
+                    # X_pending=None
                     X_pending=X_pending
                 )
             #specificy sequential and say what was already appended
             #need to add an extra dimension to specify that each batch is a single point
+
+            #shape is weird here, the embedding that is being passed into the acquisition function is gpu_batch x qbatch x d
             self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
-            #print(self.preds[-10:])
+            
+            # self.acquisition_function = botorch.acquisition.qNoisyExpectedImprovement(
+            #         model=self.model,
+            #         X_baseline=self.queries_x.cpu().detach(),
+            #         sampler=sampler,
+            #         prune_baseline=True,
+            #         # X_pending=None
+            #         X_pending=X_pending
+            #     )
+            # self.preds = self.acquisition_function.forward(self.embeddings.cpu().detach().double())
+            # print(self.preds[10:])
 
         else: #UCB or Greedy
             if self.gpu: 
@@ -144,6 +158,7 @@ class Acquisition:
     def max_obj(self, x):
         #add the extra dimension to specify qbatch is only 1
         #works with submodular optimization
+        #return self.acquisition_function.forward(x)
         return self.acquisition_function.forward(x.reshape((x.shape[0], 1, x.shape[1])))
 
 # USER: Acquisition function API:

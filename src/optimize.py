@@ -293,12 +293,13 @@ class BayesianOptimization:
                         acq.get_embedding()
                         acq.get_preds(None)
                     else:
+                        #TS requires a new acquisition function each time
+                        #Submodular optimizaiton of qEI requires reevaluation given pending points
                         if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
                             acq.get_preds(self.X_pending)
                     
                     x, ypred, idx = acq.get_next_query(self.queries_x, self.norm_y)
                     
-
                         #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
 
                     # elif self.acq_fn != 'TS':
@@ -374,9 +375,10 @@ class BayesianOptimization:
             idx = torch.reshape(idx, (1, 1))[0]
         
         #print(x_ind.shape)
+        self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
         self.X_pending = self.queries_x[-self.index-1:] #new points from the batch
 
-        self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
+
         self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
         self.indices = torch.cat((self.indices, idx.double()), dim=0)
         self.preds.append(ypred * self.normalizer)
