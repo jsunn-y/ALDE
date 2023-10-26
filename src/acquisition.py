@@ -17,7 +17,7 @@ class Acquisition:
     """Generic class for acquisition functions that includes the function and
     its optimizer."""
 
-    def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi):
+    def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi, seed_index, save_dir):
         """Initializes Acquisition object.
         -@param: acq_fn, takes in prior distribution and builds function
         -@param: next_query, optimizes acq_fn and returns next x val.
@@ -35,6 +35,8 @@ class Acquisition:
         self.verbose = verbose
         self.domain = domain # not used bc discrete domain
         self.xi = xi
+        self.seed_index = seed_index
+        self.save_dir = save_dir
 
         self.embeddings = None
         self.preds = None
@@ -45,14 +47,14 @@ class Acquisition:
         ind = torch.argmax(self.preds)
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
         acq_val = self.preds[ind].detach().double()
-        print("Best acq val" + str(acq_val))
+        #print("Best acq val" + str(acq_val))
         best_idx = ind
         
         # if maximizer already queried, take the "next best"
         if utils.find_x(best_x, samp_x.cpu()):
-            print('Best already taken, finding next best')
+            #print('Best already taken, finding next best')
             best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
-            print("Replacement acq val" + str(acq_val))
+            #print("Replacement acq val" + str(acq_val))
 
         return best_x, acq_val, best_idx
 
@@ -67,7 +69,7 @@ class Acquisition:
             # start= time.time()
             self.embeddings = self.model.embed_batched_gpu(self.disc_X).double()
             #print(os.getcwd())
-            #torch.save(self.embeddings, 'embeddings.pt')
+            torch.save(self.embeddings, 'embeddings.pt')
             # print('embedding time', time.time() - start)
         else:
             self.embeddings = self.disc_X
@@ -151,6 +153,8 @@ class Acquisition:
 
             if self.acq.upper() == 'UCB':
                 delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                torch.save(sigma, self.save_dir + 'sigma.pt')
+                torch.save(mu, self.save_dir + 'mu.pt')
                 self.preds = mu + delta
             elif self.acq.upper() == 'GREEDY':
                 self.preds = mu.cpu()

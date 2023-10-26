@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'TrpB_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 24
+    runs = 70
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
@@ -136,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['MLDE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
+        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['GREEDY']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:

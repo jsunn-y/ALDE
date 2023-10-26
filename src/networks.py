@@ -484,7 +484,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                  n_tokens = int(x.shape[-1]/n_sites)
                  #x = torch.transpose(torch.reshape(x, (x.shape[0], n_sites, n_tokens)), 1, 2)
                  shape = tuple(np.append(list(x.shape[:-1]), [n_sites, n_tokens]))
-                 print(shape)
+                 #print(shape)
                  x = torch.transpose(torch.reshape(x, shape), -1, -2)
                 
             return self.feature_extractor(x)

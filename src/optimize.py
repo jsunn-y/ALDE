@@ -55,6 +55,7 @@ class BO_ARGS(MapClass):
     query_cost: float = 1.
     savedir: str = 'results/'
     verbose: int = 1 # 0, 1, 2, 3
+    seed_index: int = 0
     run_mlde: bool = True
     
 
@@ -90,6 +91,7 @@ class BayesianOptimization:
                  queries_y: Tensor | None = None,
                  indices: Tensor | None = None,
                  savedir='',
+                 seed_index=0,
                  verbose=True,
                  run_mlde=True,
                  *_, **__):
@@ -117,6 +119,7 @@ class BayesianOptimization:
 
         print("\nInitializing Bayesian Optimization.----------------------\n")
         # normalize domain and get reversion func, conversion func
+        self.seed_index = seed_index #random seed
         self.domain = domain
         # normalize full x set for certain acq fns
         if disc_X is not None:
@@ -289,7 +292,7 @@ class BayesianOptimization:
                 else:
                     #start = time.time()
                     if self.index == 0:
-                        acq = acquisition.Acquisition(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi)
+                        acq = acquisition.Acquisition(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
                         acq.get_embedding()
                         acq.get_preds(None)
                     else:
