@@ -73,7 +73,7 @@ if __name__ == "__main__":
     batch_size = 96
 
     n_pseudorand_init = batch_size
-    budget = 384 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = 96*16 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/' + encoding + '/'
+    subdir = path + 'results/UQ_analysis/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,9 +90,9 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 1
+    runs = 10
     # start this at 0, -> however many runs you do total. i.e. 20
-    index = 2
+    index = 0
     seeds = []
 
     with open('rndseed.txt', 'r') as f:
@@ -136,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['TS']: #'QEI', 'UCB','TS'
+        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -152,8 +152,8 @@ if __name__ == "__main__":
                 elif 'CDKL' in mtype:
                     if 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
-                        arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
+                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
+                        #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
                     elif 'ESM2' in encoding:
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
                 elif 'DKL' in mtype:

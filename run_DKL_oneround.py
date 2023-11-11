@@ -118,7 +118,7 @@ if __name__ == "__main__":
         start_x, start_y, start_indices = utils.samp_discrete(n_pseudorand_init, obj, seed)
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
                 dropout=0
 

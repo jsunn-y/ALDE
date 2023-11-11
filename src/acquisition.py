@@ -149,10 +149,12 @@ class Acquisition:
                 with gpytorch.settings.fast_pred_var(), torch.no_grad():
                     mu, sigma = self.model.predict_batched_gpu(self.embeddings)
             else:
+                ### need to fix this, currently does not work ###
                 mu, sigma = self.model.predict(self.embeddings)
 
             if self.acq.upper() == 'UCB':
                 delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                #save for uncertainty quantification
                 torch.save(sigma, self.save_dir + 'sigma.pt')
                 torch.save(mu, self.save_dir + 'mu.pt')
                 self.preds = mu + delta
