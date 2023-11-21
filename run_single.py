@@ -73,7 +73,7 @@ if __name__ == "__main__":
     batch_size = 96
 
     n_pseudorand_init = batch_size
-    budget = 96*16 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = 96*4 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -136,9 +136,9 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
-                dropout=0
+                dropout=0.1
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
                 #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
@@ -150,7 +150,10 @@ if __name__ == "__main__":
                 if 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif 'CDKL' in mtype:
-                    if 'onehot' in encoding:
+                    if 'AA' in encoding:
+                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
+                        arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 16]
+                    elif 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
                         arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
                         #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
@@ -158,7 +161,9 @@ if __name__ == "__main__":
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
+                        arc  = [domain[0].size(-1), 30, 30, 30]
+                    elif 'AA' in encoding:
+                        arc  = [domain[0].size(-1), 8, 4, 4]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:

@@ -87,6 +87,9 @@ class Combo(Objective):
             if encoding == 'GB1_onehot':
                 self.bwx = '/home/jyang4/repos/data/GB1_onehot_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
+            elif encoding == 'GB1_AA':
+                self.bwx = '/home/jyang4/repos/data/GB1_AA_x.pt'
+                #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             # elif encoding == 'GB1_ESM1b':
             #     self.bwx = '/home/jyang4/repos/data/GB1_ESM1b_x.pt'
             #     self.bwy = '/home/jyang4/repos/data/GB1_ESM1b_y.pt'

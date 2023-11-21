@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -136,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['GREEDY']: #'QEI', 'UCB','TS'
+        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -156,6 +156,8 @@ if __name__ == "__main__":
                     elif 'ESM2' in encoding:
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
                 elif 'DKL' in mtype:
+                    if 'AA' in encoding:
+                        arc  = [domain[0].size(-1), 16, 8, 8]
                     if 'onehot' in encoding:
                         arc  = [domain[0].size(-1), 40, 20, 10, 10]
                     else:
