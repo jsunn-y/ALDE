@@ -89,6 +89,8 @@ class Combo(Objective):
                 #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             elif encoding == 'GB1_AA':
                 self.bwx = '/home/jyang4/repos/data/GB1_AA_x.pt'
+            elif encoding == 'GB1_georgiev':
+                self.bwx = '/home/jyang4/repos/data/GB1_georgiev_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             # elif encoding == 'GB1_ESM1b':
             #     self.bwx = '/home/jyang4/repos/data/GB1_ESM1b_x.pt'
@@ -97,8 +99,12 @@ class Combo(Objective):
             #     self.bwx = '/home/jyang4/repos/data/GB1_TAPE_x.pt'
             #     self.bwy = '/home/jyang4/repos/data/GB1_TAPE_y.pt'
             elif encoding == 'TrpB_onehot':
-                self.bwx = '/home/jyang4/repos/data/trpB_onehot_x.pt'
+                self.bwx = '/home/jyang4/repos/data/TrpB_onehot_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/trpB_onehot_y.pt'
+            elif encoding == 'TrpB_AA':
+                self.bwx = '/home/jyang4/repos/data/TrpB_AA_x.pt'
+            elif encoding == 'TrpB_georgiev':
+                self.bwx = '/home/jyang4/repos/data/TrpB_georgiev_x.pt'
             
             self.X = torch.load(self.bwx)
             #self.y = torch.load(self.bwy)

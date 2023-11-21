@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -136,9 +136,9 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
-                dropout=0.1
+        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['EI']: #'QEI', 'UCB','TS'
+                dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
                 #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
@@ -164,6 +164,8 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 30, 30, 30]
                     elif 'AA' in encoding:
                         arc  = [domain[0].size(-1), 8, 4, 4]
+                    elif 'georgiev' in encoding:
+                        arc  = [domain[0].size(-1), 30, 30, 30]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:

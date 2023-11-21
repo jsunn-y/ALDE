@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
+    encoding = 'TrpB_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                 elif 'DKL' in mtype:
                     if 'AA' in encoding:
                         arc  = [domain[0].size(-1), 16, 8, 8]
-                    if 'onehot' in encoding:
+                    if 'onehot' in encoding or 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 40, 20, 10, 10]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers

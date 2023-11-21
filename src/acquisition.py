@@ -142,24 +142,32 @@ class Acquisition:
             # self.preds = self.acquisition_function.forward(self.embeddings.cpu().detach().double())
             # print(self.preds[10:])
 
-        else: #UCB or Greedy
-            if self.gpu: 
-                self.model = self.model.cuda()
-                # so don't put too much on gpu at once
-                with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                    mu, sigma = self.model.predict_batched_gpu(self.embeddings)
+        else: 
+            if self.acq.upper() == 'EI':
+                if self.gpu:
+                    self.model = self.model.cuda()
+                    #should samp_y should be updated with each query or not? For now, use the same maximum for every query before retraining the model
+                    self.acquisition_function = botorch.acquisition.analytic.ExpectedImprovement(self.model, torch.max(self.norm_y))
+                    self.preds = self.model.eval_acquisition_batched_gpu(self.embeddings, f=self.max_obj).cpu().detach().double()
             else:
-                ### need to fix this, currently does not work ###
-                mu, sigma = self.model.predict(self.embeddings)
+                #UCB or Greedy
+                if self.gpu: 
+                    self.model = self.model.cuda()
+                    # so don't put too much on gpu at once
+                    with gpytorch.settings.fast_pred_var(), torch.no_grad():
+                        mu, sigma = self.model.predict_batched_gpu(self.embeddings)
+                else:
+                    ### need to fix this, currently does not work ###
+                    mu, sigma = self.model.predict(self.embeddings)
 
-            if self.acq.upper() == 'UCB':
-                delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
-                #save for uncertainty quantification
-                torch.save(sigma, self.save_dir + 'sigma.pt')
-                torch.save(mu, self.save_dir + 'mu.pt')
-                self.preds = mu + delta
-            elif self.acq.upper() == 'GREEDY':
-                self.preds = mu.cpu()
+                if self.acq.upper() == 'UCB':
+                    delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+                    #save for uncertainty quantification
+                    torch.save(sigma, self.save_dir + 'sigma.pt')
+                    torch.save(mu, self.save_dir + 'mu.pt')
+                    self.preds = mu + delta
+                elif self.acq.upper() == 'GREEDY':
+                    self.preds = mu.cpu()
 
     def max_obj(self, x):
         #add the extra dimension to specify qbatch is only 1
