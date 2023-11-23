@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'TrpB_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
+    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -136,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
+        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['QEI']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -160,7 +160,7 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 16, 8, 8]
                     if 'onehot' in encoding or 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 40, 20, 10, 10]
-                    else:
+                    elif 'ESM2' in encoding:
                         arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]

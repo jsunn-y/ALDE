@@ -414,6 +414,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         
         self.lin = False
         self.feature_extractor = None
+        self.scale_to_bounds = gpytorch.utils.grid.ScaleToBounds(-1., 1.)
 
         if len(architecture) > 2:  # DKL. could also allow this to be pretrained and passed in
             self.dkl = True
@@ -458,6 +459,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
     def forward(self, x: Tensor) -> gpytorch.distributions.MultivariateNormal:
         # We're first putting our data through a deep net (feature extractor)
         emb = self.embedding(x)
+        scaled_emb = self.scale_to_bounds(emb) #scale to bounds is new
         #something is wrong with the shape here in qEI
         
         mean_x = self.mean_module(emb)
@@ -501,11 +503,14 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         else:
             return [{"params": self.parameters()}]
 
-    def train_model(self, X, Y, lr, num_iter=100, verbose=2, *_, **__):
+    def train_model(self, X, Y, lr, num_iter=100, verbose=2, max_iter=300, *_, **__):
         self.train()
         self.likelihood.train()
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
 
+        losses = np.zeros(num_iter)
+        w = 30  # moving window size for early stopping
+        
         if False:
         # if not self.dkl:
             self.likelihood, self = self.likelihood.cpu(), self.cpu()
@@ -515,7 +520,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                 self.feature_extractor.train()
             optimizer = torch.optim.Adam(self.get_params(), lr=lr)
             with gpytorch.settings.fast_pred_var(), gpytorch.settings.use_toeplitz(False):
-                for iter in range(num_iter):
+                for i in range(num_iter):
                     optimizer.zero_grad()
                     # IMPORTANT: don't use fwd
                     preds = self(X)
@@ -523,8 +528,16 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                     loss.backward()
                     #print("Loss: " + str(loss))
                     optimizer.step()
+                    losses[i] = loss.item()
+
+                    if i > w and losses[i-w+1:i+1].min() >= losses[:i-w+1].min():
+                        #this is a pretty conservative early stopping condition, might want to update
+                        if verbose >= 2:
+                            print("Early stopping at iteration " + str(i))
+                        break
             if self.feature_extractor != None:
                 self.feature_extractor.eval()
+            
 
         self.eval()
         self.likelihood.eval()

@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'TrpB_onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'TrpB_georgiev' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -90,9 +90,9 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 70-24
+    runs = 70
     # start this at 0, -> however many runs you do total. i.e. 20
-    index = 24
+    index = 0
     seeds = []
 
     with open('rndseed.txt', 'r') as f:
@@ -147,23 +147,7 @@ if __name__ == "__main__":
                 num_simult_jobs = 1
 
                 #last layer of architecture should be repeated, this gets fed to the GP
-                if 'GP' in mtype:
-                    arc = [domain[0].size(-1), 1] #use this architecture for GP
-                elif 'CDKL' in mtype:
-                    if 'onehot' in encoding:
-                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
-                    elif 'ESM2' in encoding:
-                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
-                elif 'DKL' in mtype:
-                    if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
-                    else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
-                    # if 'ESM2' in encoding:
-                    #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
-                else:
-                    arc = [domain[0].size(-1), 1] #filler architecture for MLDE
+                arc = [domain[0].size(-1), 1] #filler architecture for MLDE
 
                 #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
                 if 'MLDE' in mtype:

@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'TrpB_ESM2'
+    encoding = 'GB1_AA'
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -148,7 +148,7 @@ if __name__ == "__main__":
                     trainlr=1e-3, #originally 1e-2 in james
                     train_iter=300,
                     dropout=dropout,
-                    mcdropout=0,                                                                                                                                                                                                                                                                                                                                                        
+                    mcdropout=0,                                                       
                     verbose=2,
                     # usually don't change
                     bb_fn=obj_fn,
