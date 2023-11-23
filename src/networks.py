@@ -414,7 +414,6 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         
         self.lin = False
         self.feature_extractor = None
-        self.scale_to_bounds = gpytorch.utils.grid.ScaleToBounds(-1., 1.)
 
         if len(architecture) > 2:  # DKL. could also allow this to be pretrained and passed in
             self.dkl = True
@@ -436,6 +435,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         else:
             raise NotImplementedError(f"Add your kernel {kernel} in networks.py to use it.")
 
+
         SingleTaskGP.__init__(
             self,
             # TODO this doesn't work still bc training inputs diff
@@ -455,11 +455,13 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                 self.feature_extractor = CNN(architecture[:-1], activation, p_dropout)
             else:
                 self.feature_extractor = DNN_FF(architecture[:-1], activation, p_dropout)
+        
+        self.scale_to_bounds = gpytorch.utils.grid.ScaleToBounds(-1., 1.)
 
     def forward(self, x: Tensor) -> gpytorch.distributions.MultivariateNormal:
         # We're first putting our data through a deep net (feature extractor)
         emb = self.embedding(x)
-        scaled_emb = self.scale_to_bounds(emb) #scale to bounds is new
+        emb = self.scale_to_bounds(emb) #scale to bounds is new
         #something is wrong with the shape here in qEI
         
         mean_x = self.mean_module(emb)
@@ -509,7 +511,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
 
         losses = np.zeros(num_iter)
-        w = 30  # moving window size for early stopping
+        w = 10  # moving window size for early stopping
         
         if False:
         # if not self.dkl:
@@ -529,12 +531,18 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                     #print("Loss: " + str(loss))
                     optimizer.step()
                     losses[i] = loss.item()
+                    #print(loss.item())
 
-                    if i > w and losses[i-w+1:i+1].min() >= losses[:i-w+1].min():
+                    if i > w:
+                        recent_min = losses[i-w+1:i+1].min() 
+                        overall_min = losses[:i-w+1].min()
+                        #print(overall_min -recent_min)
                         #this is a pretty conservative early stopping condition, might want to update
-                        if verbose >= 2:
+                        if overall_min <= recent_min:
+                        #stop if the training loss doesn't improve by more that 0.1 in 30 iterations (aproximately a likelihood improvement of 1.1)
+                        # if (overall_min - recent_min) < 0.2:
                             print("Early stopping at iteration " + str(i))
-                        break
+                            break
             if self.feature_extractor != None:
                 self.feature_extractor.eval()
             

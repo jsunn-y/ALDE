@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/UQ_analysis/new_DKL/' + encoding + '/'
+    subdir = path + 'results/UQ_analysis/hyperparameters_earlystopping5/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,
-                    trainlr=0.1, #originally 1e-2 in james
+                    trainlr=0.1, #originally 1e-2 in james, have also tried 1e-3
                     train_iter=300,
                     dropout=dropout,
                     mcdropout=0,
