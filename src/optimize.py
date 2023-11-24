@@ -422,6 +422,9 @@ class BayesianOptimization:
         candidate_indices = np.delete(all_indices, train_indices, 0)
         y_preds_all = np.zeros((candidate_X.shape[0], 5))
 
+        #only for UQ
+        y_preds_full_all = np.zeros((self.disc_X.shape[0], 5))
+
         for i in range(5):
             X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.1, random_state=i)
 
@@ -435,9 +438,27 @@ class BayesianOptimization:
             clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
             y_preds = clf.predict(candidate_X)
             y_preds_all[:, i] = y_preds
-        y_preds = np.mean(y_preds_all, axis = 1)
 
-        top_candidate_indices = torch.topk(torch.tensor(y_preds), num_preds).indices
+            #only for UQ
+            y_preds_full = clf.predict(self.disc_X)
+            y_preds_full_all[:, i] = y_preds_full
+
+        y_preds = np.mean(y_preds_all, axis = 1)
+        y_preds_std = np.std(y_preds_all, axis = 1)
+        y_preds = torch.tensor(y_preds)
+
+        #only for UQ
+        mu = np.mean(y_preds_full_all, axis = 1)
+        sigma = np.std(y_preds_full_all, axis = 1)
+
+        if self.acq_fn == 'UCB':
+            delta = (self.xi * torch.ones_like(y_preds)).sqrt() *y_preds_std
+            y_preds = y_preds + delta
+
+        torch.save(torch.tensor(mu), self.savedir + 'mu.pt')
+        torch.save(torch.tensor(sigma), self.savedir + 'sigma.pt')
+
+        top_candidate_indices = torch.topk(y_preds, num_preds).indices
         top_X = candidate_X[top_candidate_indices]
         top_y_preds = y_preds[top_candidate_indices]
         top_indices = torch.tensor(candidate_indices[top_candidate_indices])

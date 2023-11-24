@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
+    encoding = 'TrpB_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2, GB1_AA
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
