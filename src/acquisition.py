@@ -69,12 +69,21 @@ class AcquisitionEnsemble(Acquisition):
 
         #print (self.y_preds_full_all.shape)
         if self.acq.upper() == 'UCB':
+            #could also just implement this as the best or second best value
             mu = torch.mean(self.y_preds_full_all, axis = 1)
             sigma = torch.std(self.y_preds_full_all, axis = 1)
             delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
             self.preds = mu + delta
         elif self.acq.upper() == 'GREEDY':
             self.preds = torch.mean(self.y_preds_full_all, axis = 1)
+        elif self.acq.upper() == 'EI':
+            #how to calculate it in this case?
+            pass
+        elif self.acq.upper() == 'TS':
+            #select a random moel
+            column = np.random.randint(self.y_preds_full_all.shape[1])
+            self.preds = (self.y_preds_full_all[:, column])
+            #print(self.preds.shape)
 
 class AcquisitionGP(Acquisition):
     def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi, seed_index, save_dir):

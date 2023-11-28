@@ -538,7 +538,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
 
         losses = np.zeros(num_iter)
-        w = 10  # moving window size for early stopping
+        w = 30  # moving window size for early stopping
         
         if False:
         # if not self.dkl:
