@@ -124,16 +124,18 @@ class DNN_FF(torch.nn.Sequential):
         activation="relu",
         p_dropout=0,
         inference_args=None,
+        device='cuda',
         *_,
         **__,
     ):
         super().__init__()
-
+        self.device = device
         self.architecture = architecture
         act_layer = self.act_dict[activation.lower()]
         self.inference_args = inference_args
         self.dkl = True
 
+        #print(architecture)
         for dim in range(len(architecture)):
             name = str(dim + 1)
             if dim + 1 < len(architecture):
@@ -165,6 +167,15 @@ class DNN_FF(torch.nn.Sequential):
 
         self.eval()
         return self, None
+
+    # def predict_batched_gpu(self, X):
+    #     mu, sigma = [], []
+    #     for n in range(0, X.shape[0], self.gpu_batch_size):
+    #         # TODO: forward gives prior, model uses posterior
+    #         mvn = self(X[n : n + self.gpu_batch_size].to(self.device))
+    #         mu.append(mvn.mean.cpu())
+    #         sigma.append(mvn.stddev.cpu())
+    #     return torch.cat(mu, 0), torch.cat(sigma, 0)
 
 
 #standard CNN

@@ -249,10 +249,8 @@ class BayesianOptimization:
 
         # train init model on random samples w/ norm y
         print("Creating initial prior.")
-        
-        if self.mtype == 'MLDE':
-            x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
-        else:
+
+        if 'BOOSTING' not in self.mtype:
             self.surrogate = models.Model(
                 self.queries_x,
                 torch.reshape(self.norm_y, (1, -1))[0],
@@ -267,41 +265,52 @@ class BayesianOptimization:
                 activation=self.activation,
                 lr=self.trainlr,
                 verbose=self.verbose)
-            
-            #start = time.time()
-            _ = self.surrogate.train(self.queries_x, torch.reshape(self.norm_y, (1, -1))[0], reset=False)
-            #print('Train time: ', time.time()-start)
-
+        
+        
         # main loop; form and optimize acq_func to find next query x based on model (prior)
         while self.cost < self.budget:
             
+            if 'ENSEMBLE' in self.mtype:
+            #x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
+                y_preds_full_all = self.train_predict_ensemble(self.queries_x, self.norm_y, self.batch_size)
+            else:
+                #start = time.time()
+                #chekc the reset stuff
+                _ = self.surrogate.train(self.queries_x, torch.reshape(self.norm_y, (1, -1))[0], reset=True)
+                #print('Train time: ', time.time()-start)
+
             for self.index in range(self.batch_size):
 
                 #loop through each of the models and acquisition function types
-                if self.mtype == 'MLDE':
-                    #need to update this to produce the correct index
-                    if self.batch_size == 1:
-                        x = x_list.reshape(1,-1)
-                        ypred = ypred_list
-                        idx = idx_list
+                # if 'MLDE' in self.mtype:
+                #     # #need to update this to produce the correct index
+                #     # if self.batch_size == 1:
+                #     #     x = x_list.reshape(1,-1)
+                #     #     ypred = ypred_list
+                #     #     idx = idx_list
+                #     # else:
+                #     #     #check the dimension of x here
+                #     #     x = x_list[self.index].reshape(1,-1)
+                #     #     ypred = ypred_list[self.index]
+                #     #     idx = idx_list[self.index]
+                # else:
+                #start = time.time()
+                if self.index == 0:
+                    if 'ENSEMBLE' in self.mtype:
+                        acq = acquisition.AcquisitionEnsemble(self.acq_fn, self.domain, self.queries_x, self.norm_y, y_preds_full_all, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
                     else:
-                        #check the dimension of x here
-                        x = x_list[self.index].reshape(1,-1)
-                        ypred = ypred_list[self.index]
-                        idx = idx_list[self.index]
-                else:
-                    #start = time.time()
-                    if self.index == 0:
-                        acq = acquisition.Acquisition(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
+                        acq = acquisition.AcquisitionGP(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
                         acq.get_embedding()
-                        acq.get_preds(None)
-                    else:
-                        #TS requires a new acquisition function each time
-                        #Submodular optimizaiton of qEI requires reevaluation given pending points
-                        if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
-                            acq.get_preds(self.X_pending)
-                    
-                    x, ypred, idx = acq.get_next_query(self.queries_x, self.norm_y)
+                    acq.get_preds(None)
+                else:
+                    #TS requires a new acquisition function each time
+                    #Submodular optimizaiton of qEI requires reevaluation given pending points
+                    if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
+                        acq.get_preds(self.X_pending)
+                
+                x, acq_val, idx = acq.get_next_query(self.queries_x, self.norm_y)
+                # print(idx)
+                #print(ypred)
                     
                         #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
 
@@ -312,18 +321,18 @@ class BayesianOptimization:
 
                     #print('Evaluation time: ', time.time()-start)
 
-                max, simp_reg = self.update_trajectory(x, ypred, idx)
+                max, simp_reg = self.update_trajectory(x, acq_val, idx)
 
             # track progress at intervals
             # only save progress outside of the batch training
             if self.savedir is not None and self.cost%(24) == 0:
                 save_tensors()
 
-            if self.cost < self.budget:
-                if self.mtype == 'MLDE':
-                    x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
-                else:
-                    _ = self.surrogate.train(self.queries_x, self.norm_y, reset=self.reset, dynamic_arc=self.arc_fn(self.architecture, self.queries_y.size(0), self.budget))
+            # if self.cost < self.budget:
+            #     if self.mtype == 'MLDE':
+            #         x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
+            #     else:
+            #         _ = self.surrogate.train(self.queries_x, self.norm_y, reset=self.reset, dynamic_arc=self.arc_fn(self.architecture, self.queries_y.size(0), self.budget))
             
             #don't stop early
             # if simp_reg == 0:
@@ -334,13 +343,14 @@ class BayesianOptimization:
         
         #do MLDE at the end
         #if self.cost < self.budget + 96:
-        if self.run_mlde:
-            print('Running MLDE for final 96 queries.')
-            x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y)
-            #check the dimension of x here
-            for x, ypred, idx in zip(x_list, ypred_list, idx_list):
-                max, simp_reg = self.update_trajectory(x.reshape(1,-1), ypred, idx)
 
+        #need to update this
+        # if self.run_mlde:
+        #     print('Running MLDE for final 96 queries.')
+        #     x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y)
+        #     #check the dimension of x here
+        #     for x, ypred, idx in zip(x_list, ypred_list, idx_list):
+        #         max, simp_reg = self.update_trajectory(x.reshape(1,-1), ypred, idx)
         
         if self.savedir is not None:
                 save_tensors()
@@ -368,7 +378,7 @@ class BayesianOptimization:
         res = test.optimize()
         return res
     
-    def update_trajectory(self, x, ypred, idx):
+    def update_trajectory(self, x, acq_val, idx):
         with torch.no_grad():
             x_ind = torch.reshape(x[0], (1, -1))
             y = self.bb_fn(botorch.utils.transforms.unnormalize(x_ind, self.domain), noise=self.noise())
@@ -384,7 +394,8 @@ class BayesianOptimization:
 
         self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
         self.indices = torch.cat((self.indices, idx.double()), dim=0)
-        self.preds.append(ypred * self.normalizer)
+        
+        #self.preds.append(acq_val * self.normalizer)
         if self.verbose >= 3: print("x index: {}, y: {}".format(idx[0], y[0]))
 
         self.max = torch.max(self.queries_y)
@@ -406,7 +417,7 @@ class BayesianOptimization:
         return max, simp_reg
         
 
-    def train_predict_mlde_lite(self, X_train, y_train, num_preds=96):
+    def train_predict_ensemble(self, X_train_all, y_train_all, num_preds=96):
         """
         Simplified training and prediction loop for MLDE. Always uses greedy acquisition.
         """
@@ -415,55 +426,64 @@ class BayesianOptimization:
         # train_indices = []
         # for row in X_train:
         #     train_indices.append(np.where((self.disc_X == row).all(axis=1))[0])
-        train_indices = self.indices.numpy().astype(int)
+        #train_indices = self.indices.numpy().astype(int)
 
-        candidate_X = np.delete(self.disc_X, train_indices, 0)
-        all_indices = np.arange(self.disc_X.shape[0])
-        candidate_indices = np.delete(all_indices, train_indices, 0)
-        y_preds_all = np.zeros((candidate_X.shape[0], 5))
+        #candidate_X = np.delete(self.disc_X, train_indices, 0)
+        #all_indices = np.arange(self.disc_X.shape[0])
+        #candidate_indices = np.delete(all_indices, train_indices, 0)
+        #y_preds_all = np.zeros((candidate_X.shape[0], 5))
 
-        #only for UQ
         y_preds_full_all = np.zeros((self.disc_X.shape[0], 5))
 
         for i in range(5):
-            X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.1, random_state=i)
+            X_train, X_validation, y_train, y_validation = train_test_split(X_train_all, y_train_all, test_size=0.1, random_state=self.seed_index + i)
+            if 'BOOSTING' in self.mtype:
 
-            model_kwargs = {
-            "objective": "reg:tweedie",
-            "early_stopping_rounds": 10,
-            "nthread": -1
-            }
-            clf = xgb.XGBRegressor(**model_kwargs)
-            eval_set = [(X_validation, y_validation)]
-            clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
-            y_preds = clf.predict(candidate_X)
-            y_preds_all[:, i] = y_preds
+                model_kwargs = {
+                "objective": "reg:tweedie",
+                "early_stopping_rounds": 10,
+                "nthread": -1
+                }
+                clf = xgb.XGBRegressor(**model_kwargs)
+                eval_set = [(X_validation, y_validation)]
+                clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
+                #y_preds = clf.predict(candidate_X)
+                #y_preds_all[:, i] = y_preds
 
-            #only for UQ
-            y_preds_full = clf.predict(self.disc_X)
+                y_preds_full = clf.predict(self.disc_X)
+            elif 'DNN' in self.mtype:
+                #_ = self.surrogate.train(self.queries_x, torch.reshape(self.norm_y, (1, -1))[0], reset=False)
+                #print(X_train.shape)
+                #print(y_train.shape)
+                _ = self.surrogate.train(X_train, torch.reshape(y_train, (-1, 1)), reset=True)
+                #TODO: see if you need to put this on gpu
+                y_preds_full = self.surrogate.model(self.disc_X.to(self.surrogate.model.device)).detach().cpu().numpy().reshape(-1)
+                #print(y_preds_full.shape)
+
             y_preds_full_all[:, i] = y_preds_full
 
-        y_preds = np.mean(y_preds_all, axis = 1)
-        y_preds_std = np.std(y_preds_all, axis = 1)
-        y_preds = torch.tensor(y_preds)
+        #y_preds = np.mean(y_preds_all, axis = 1)
+        #y_preds_std = np.std(y_preds_all, axis = 1)
+        return torch.tensor(y_preds_full_all)
 
-        #only for UQ
-        mu = np.mean(y_preds_full_all, axis = 1)
-        sigma = np.std(y_preds_full_all, axis = 1)
 
-        if self.acq_fn == 'UCB':
-            delta = (self.xi * torch.ones_like(y_preds)).sqrt() *y_preds_std
-            y_preds = y_preds + delta
+        # #only for UQ
+        # mu = np.mean(y_preds_full_all, axis = 1)
+        # sigma = np.std(y_preds_full_all, axis = 1)
 
-        torch.save(torch.tensor(mu), self.savedir + 'mu.pt')
-        torch.save(torch.tensor(sigma), self.savedir + 'sigma.pt')
+        # if self.acq_fn == 'UCB':
+        #     delta = (self.xi * torch.ones_like(y_preds)).sqrt() *y_preds_std
+        #     y_preds = y_preds + delta
 
-        top_candidate_indices = torch.topk(y_preds, num_preds).indices
-        top_X = candidate_X[top_candidate_indices]
-        top_y_preds = y_preds[top_candidate_indices]
-        top_indices = torch.tensor(candidate_indices[top_candidate_indices])
+        # torch.save(torch.tensor(mu), self.savedir + 'mu.pt')
+        # torch.save(torch.tensor(sigma), self.savedir + 'sigma.pt')
 
-        return top_X, top_y_preds, top_indices
+        # top_candidate_indices = torch.topk(y_preds, num_preds).indices
+        # top_X = candidate_X[top_candidate_indices]
+        # top_y_preds = y_preds[top_candidate_indices]
+        # top_indices = torch.tensor(candidate_indices[top_candidate_indices])
+
+        # return top_X, top_y_preds, top_indices
     
     
 

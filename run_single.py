@@ -73,7 +73,7 @@ if __name__ == "__main__":
     batch_size = 96
 
     n_pseudorand_init = batch_size
-    budget = 96*4 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = 96*5 - n_pseudorand_init #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
 
     try:
         mp.set_start_method('spawn')
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DNN_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['BOOSTING_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['UCB']: #'QEI', 'UCB','TS'
                 dropout=0
 
@@ -147,7 +147,16 @@ if __name__ == "__main__":
                 num_simult_jobs = 1
 
                 #last layer of architecture should be repeated, this gets fed to the GP
-                if 'GP' in mtype:
+                if mtype == 'DNN_ENSEMBLE':
+                    if 'onehot' in encoding:
+                        arc  = [domain[0].size(-1), 30, 30, 1]
+                    elif 'AA' in encoding:
+                        arc  = [domain[0].size(-1), 8, 4, 1]
+                    elif 'georgiev' in encoding:
+                        arc  = [domain[0].size(-1), 30, 30, 1]
+                    else:
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] 
+                elif 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif 'CDKL' in mtype:
                     if 'AA' in encoding:

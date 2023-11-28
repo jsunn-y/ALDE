@@ -77,14 +77,14 @@ class Model:
             self.device,
             inference_args,
         )
-        if 'DNN_ENSEMBLE' in self.mtype:
-                print('DNN')
-                self.model = networks.DNN_FF(**self.model_args)
-        else:
-            if 'BOTORCH' in self.mtype:
-                self.model = networks.BoTorchGP(**self.model_args)
-            else:
-                self.model = networks.GP(**self.model_args)
+        # if 'DNN_ENSEMBLE' in self.mtype:
+        #         print('DNN')
+        #         self.model = networks.DNN_FF(**self.model_args)
+        # else:
+        #     if 'BOTORCH' in self.mtype:
+        #         self.model = networks.BoTorchGP(**self.model_args)
+        #     else:
+        #         self.model = networks.GP(**self.model_args)
 
     def train(
         self, train_x, train_y, iter=0, track_lc=False, reset=True, dynamic_arc=None
@@ -93,7 +93,6 @@ class Model:
             self.model_args.train_x, self.model_args.train_y = train_x, train_y
             
             if 'DNN_ENSEMBLE' in self.mtype:
-                print('DNN')
                 self.model = networks.DNN_FF(**self.model_args)
             else:
                 if 'BOTORCH' in self.mtype:
