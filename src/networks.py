@@ -19,6 +19,7 @@ import torch
 from torch import nn, Tensor
 
 class GenericModel:
+    #general model for all GPs and Deep Kernels
     def __init(self, **_):
         raise NotImplementedError
 
@@ -95,9 +96,19 @@ class SAMP_ARGS(MapClass):
 
 
 #############################
+# class DNN(torch.nn.Module):
+#     #for training a standalone DNN
+#     def __init__(self, layers: torch.nn.Sequential):
+#         super(DNN, self).__init__()
+#         self.layers = layers
+    
+#     def forward(self, x):
+#         return self.layers(x)
+
 
 # standard DNN, feedforward
 class DNN_FF(torch.nn.Sequential):
+    #for use in deep kernel
     act_dict = {
         "relu": torch.nn.ReLU(),
         "lrelu": torch.nn.LeakyReLU(),
@@ -149,13 +160,16 @@ class DNN_FF(torch.nn.Sequential):
             preds = self.forward(X)
             loss = mse(preds, Y)
             loss.backward()
+            #print(loss)
             optimizer.step()
 
         self.eval()
         return self, None
 
+
 #standard CNN
 class CNN(torch.nn.Sequential):
+    #for use in deep kernel
     act_dict = {
         "relu": torch.nn.ReLU(),
         "lrelu": torch.nn.LeakyReLU(),
@@ -217,10 +231,12 @@ class CNN(torch.nn.Sequential):
             preds = self.forward(X)
             loss = mse(preds, Y)
             loss.backward()
+            print(loss)
             optimizer.step()
 
         self.eval()
         return self, None
+
 
 # Use botorch model instead when possible
 # class GP(gpytorch.models.ExactGP, GenericModel):

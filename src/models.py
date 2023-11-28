@@ -77,23 +77,33 @@ class Model:
             self.device,
             inference_args,
         )
-        if 'BOTORCH' in mtype:
-            self.model = networks.BoTorchGP(**self.model_args)
+        if 'DNN_ENSEMBLE' in self.mtype:
+                print('DNN')
+                self.model = networks.DNN_FF(**self.model_args)
         else:
-            self.model = networks.GP(**self.model_args)
+            if 'BOTORCH' in self.mtype:
+                self.model = networks.BoTorchGP(**self.model_args)
+            else:
+                self.model = networks.GP(**self.model_args)
 
     def train(
         self, train_x, train_y, iter=0, track_lc=False, reset=True, dynamic_arc=None
     ):
         if reset:
             self.model_args.train_x, self.model_args.train_y = train_x, train_y
-            if 'BOTORCH' in self.mtype:
-                self.model = networks.BoTorchGP(**self.model_args)
+            
+            if 'DNN_ENSEMBLE' in self.mtype:
+                print('DNN')
+                self.model = networks.DNN_FF(**self.model_args)
             else:
-                self.model = networks.GP(**self.model_args)
+                if 'BOTORCH' in self.mtype:
+                    self.model = networks.BoTorchGP(**self.model_args)
+                else:
+                    self.model = networks.GP(**self.model_args)
+                self.model.likelihood = self.model.likelihood.to(self.device).double()
 
             train_x, train_y = train_x.to(self.device).double(), train_y.to(self.device).double()
-            self.model.likelihood, self.model = self.model.likelihood.to(self.device).double(), self.model.to(self.device).double()
+            self.model =  self.model.to(self.device).double()
         
         self.model.train_model(train_x, train_y, **self.model_args.inference_args)
 
