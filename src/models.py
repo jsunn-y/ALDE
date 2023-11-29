@@ -92,7 +92,7 @@ class Model:
         if reset:
             self.model_args.train_x, self.model_args.train_y = train_x, train_y
             
-            if 'DNN_ENSEMBLE' in self.mtype:
+            if 'DNN' in self.mtype and 'ENSEMBLE' in self.mtype:
                 self.model = networks.DNN_FF(**self.model_args)
             else:
                 if 'BOTORCH' in self.mtype:

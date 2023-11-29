@@ -73,6 +73,8 @@ class AcquisitionEnsemble(Acquisition):
             mu = torch.mean(self.y_preds_full_all, axis = 1)
             sigma = torch.std(self.y_preds_full_all, axis = 1)
             delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
+            torch.save(sigma, self.save_dir + 'sigma.pt')
+            torch.save(mu, self.save_dir + 'mu.pt')
             self.preds = mu + delta
         elif self.acq.upper() == 'GREEDY':
             self.preds = torch.mean(self.y_preds_full_all, axis = 1)

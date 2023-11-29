@@ -136,8 +136,8 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['TS']: #'QEI', 'UCB','TS'
+        for mtype in ['DNN-ES_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
@@ -147,11 +147,11 @@ if __name__ == "__main__":
                 num_simult_jobs = 1
 
                 #last layer of architecture should be repeated, this gets fed to the GP
-                if mtype == 'DNN_ENSEMBLE':
+                if 'DNN' in mtype and 'ENSEMBLE' in mtype:
                     if 'onehot' in encoding:
                         arc  = [domain[0].size(-1), 30, 30, 1]
                     elif 'AA' in encoding:
-                        arc  = [domain[0].size(-1), 8, 4, 1]
+                        arc  = [domain[0].size(-1), 8, 8, 1]
                     elif 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 30, 30, 1]
                     else:
@@ -161,22 +161,22 @@ if __name__ == "__main__":
                 elif 'CDKL' in mtype:
                     if 'AA' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 16]
+                        arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 1]
                     elif 'onehot' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
+                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 1]
                         #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
                     elif 'ESM2' in encoding:
-                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
+                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 1]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 30, 30, 30]
+                        arc  = [domain[0].size(-1), 30, 30, 1]
                     elif 'AA' in encoding:
-                        arc  = [domain[0].size(-1), 8, 4, 4]
+                        arc  = [domain[0].size(-1), 8, 8, 1]
                     elif 'georgiev' in encoding:
-                        arc  = [domain[0].size(-1), 30, 30, 30]
+                        arc  = [domain[0].size(-1), 30, 30, 1]
                     else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
                 else:

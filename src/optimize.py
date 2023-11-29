@@ -272,7 +272,7 @@ class BayesianOptimization:
             
             if 'ENSEMBLE' in self.mtype:
             #x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
-                y_preds_full_all = self.train_predict_ensemble(self.queries_x, self.norm_y, self.batch_size)
+                y_preds_full_all = self.train_predict_ensemble(self.queries_x, self.norm_y, bootstrap=True)
             else:
                 #start = time.time()
                 #chekc the reset stuff
@@ -417,7 +417,7 @@ class BayesianOptimization:
         return max, simp_reg
         
 
-    def train_predict_ensemble(self, X_train_all, y_train_all, num_preds=96):
+    def train_predict_ensemble(self, X_train_all, y_train_all, bootstrap=True):
         """
         Simplified training and prediction loop for MLDE. Always uses greedy acquisition.
         """
@@ -436,9 +436,16 @@ class BayesianOptimization:
         y_preds_full_all = np.zeros((self.disc_X.shape[0], 5))
 
         for i in range(5):
-            X_train, X_validation, y_train, y_validation = train_test_split(X_train_all, y_train_all, test_size=0.1, random_state=self.seed_index + i)
+            if bootstrap == True:
+                X_train, X_validation, y_train, y_validation = train_test_split(X_train_all, y_train_all, test_size=0.1, random_state=self.seed_index + i)
+            else:
+                X_train = X_train_all
+                y_train = y_train_all
+                X_validation = None
+                y_validation = None
+            
             if 'BOOSTING' in self.mtype:
-
+                assert bootstrap == True
                 model_kwargs = {
                 "objective": "reg:tweedie",
                 "early_stopping_rounds": 10,

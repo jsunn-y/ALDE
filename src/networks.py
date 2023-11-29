@@ -157,13 +157,29 @@ class DNN_FF(torch.nn.Sequential):
         self.train()
         optimizer = torch.optim.Adam(self.get_params(), lr=lr)
         mse = torch.nn.MSELoss()
-        for iter in range(num_iter):
+        losses = np.zeros(num_iter)
+        w = 30  # moving window size for early stopping
+
+        for i in range(num_iter):
+            #TODO: add early stopping
             optimizer.zero_grad()
             preds = self.forward(X)
             loss = mse(preds, Y)
             loss.backward()
-            #print(loss)
             optimizer.step()
+            losses[i] = loss.item()
+                    #print(loss.item())
+
+            if i > w:
+                recent_min = losses[i-w+1:i+1].min() 
+                overall_min = losses[:i-w+1].min()
+                #print(overall_min -recent_min)
+                #this is a pretty conservative early stopping condition, might want to update
+                if overall_min <= recent_min:
+                #stop if the training loss doesn't improve by more that 0.1 in 30 iterations (aproximately a likelihood improvement of 1.1)
+                # if (overall_min - recent_min) < 0.2:
+                    print("Early stopping at iteration " + str(i))
+                    break
 
         self.eval()
         return self, None
