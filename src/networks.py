@@ -168,7 +168,7 @@ class DNN_FF(torch.nn.Sequential):
             loss.backward()
             optimizer.step()
             losses[i] = loss.item()
-                    #print(loss.item())
+            #print(loss.item())
 
             if i > w:
                 recent_min = losses[i-w+1:i+1].min() 

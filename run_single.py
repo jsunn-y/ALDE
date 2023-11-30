@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/test/' + encoding + '/'
+    subdir = path + 'results/ensembles/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 1
+    runs = 10
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
@@ -154,8 +154,8 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 8, 8, 1]
                     elif 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 30, 30, 1]
-                    else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 1] 
+                    elif 'ESM2' in encoding:
+                        arc  = [domain[0].size(-1), 500, 150, 1] 
                 elif 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif 'CDKL' in mtype:

@@ -80,7 +80,10 @@ class AcquisitionEnsemble(Acquisition):
             self.preds = torch.mean(self.y_preds_full_all, axis = 1)
         elif self.acq.upper() == 'EI':
             #how to calculate it in this case?
-            pass
+            improvements = self.y_preds_full_all - max(self.norm_y)
+            #round to 0 if negative
+            improvements[improvements < 0] = 0
+            self.preds = torch.mean(improvements, axis = 1)
         elif self.acq.upper() == 'TS':
             #select a random moel
             column = np.random.randint(self.y_preds_full_all.shape[1])
