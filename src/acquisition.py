@@ -42,19 +42,26 @@ class Acquisition:
         self.preds = None
 
     # get rid of extra params here and above
-    def get_next_query(self, samp_x, samp_y):
+    def get_next_query(self, samp_x, samp_y, samp_indices):
         """Returns the next query input."""
-        ind = torch.argmax(self.preds)
+        #TODO: speed this up so that you just remove the best value from the list
+        #set the already queired values to be the min
+        #print(samp_indices)
+
+        #print(samp_indices)
+        self.preds[np.array(samp_indices, dtype=int)] = min(self.preds)
+        ind = np.argmax(self.preds)
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
-        acq_val = self.preds[ind].detach().double()
+        acq_val = self.preds[ind]#.detach().double()
         #print("Best acq val" + str(acq_val))
-        best_idx = ind
+        best_idx = torch.tensor(ind)
+        #print(best_idx)
         
-        # if maximizer already queried, take the "next best"
-        if utils.find_x(best_x, samp_x.cpu()):
-            #print('Best already taken, finding next best')
-            best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
-            #print("Replacement acq val" + str(acq_val))
+        # # if maximizer already queried, take the "next best"
+        # if utils.find_x(best_x, samp_x.cpu()):
+        #     #print('Best already taken, finding next best')
+        #     best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
+        #     #print("Replacement acq val" + str(acq_val))
 
         return best_x, acq_val, best_idx
     
@@ -89,6 +96,8 @@ class AcquisitionEnsemble(Acquisition):
             column = np.random.randint(self.y_preds_full_all.shape[1])
             self.preds = (self.y_preds_full_all[:, column])
             #print(self.preds.shape)
+        
+        self.preds = self.preds.detach().numpy()
 
 class AcquisitionGP(Acquisition):
     def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi, seed_index, save_dir):

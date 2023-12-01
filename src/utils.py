@@ -43,31 +43,31 @@ def f_batched_gpu(X, batch_size=1000, f=(lambda x: x), device='cuda'):
         return torch.cat(res, 0)
 
 # for acq
-def find_next_best(batch, preds, samp_x, samp_y):
-    # if top value in array, then find top k values and check until find good one.
-    # guaranteed to find something not queried yet. naive impl.
-    preds = torch.reshape(preds, (1, -1))[0]
-    np_pred = preds.numpy()
-    k = samp_y.size(0) + 1
-    # print("k {}".format(k))
-    inds = np.argpartition(preds.numpy(), -k)[-k:]
-    top_pred = np_pred[inds]
-    # sort ascending
-    inds2 = np.argsort(top_pred)[::-1]
-    sorted_inds = inds[inds2]
-    # naive impl
-    # start at 1 since we already tried the max above
-    redund = 1
-    while redund < k:
-        best_x = torch.reshape(batch[sorted_inds[redund]], (1, -1)).cpu().double()
-        acq_val = torch.reshape(preds[sorted_inds[redund]], (1, 1)).cpu().double()
-        if find_x(best_x, samp_x.cpu()) == False:
-            break
-        else:
-            redund += 1
-    # print("redund: {}".format(redund))
-    best_idx = torch.tensor(sorted_inds[redund])
-    return best_x, acq_val, best_idx
+# def find_next_best(batch, preds, samp_x, samp_y):
+#     # if top value in array, then find top k values and check until find good one.
+#     # guaranteed to find something not queried yet. naive impl.
+#     preds = torch.reshape(preds, (1, -1))[0]
+#     np_pred = preds.numpy()
+#     k = samp_y.size(0) + 1
+#     # print("k {}".format(k))
+#     inds = np.argpartition(preds.numpy(), -k)[-k:]
+#     top_pred = np_pred[inds]
+#     # sort ascending
+#     inds2 = np.argsort(top_pred)[::-1]
+#     sorted_inds = inds[inds2]
+#     # naive impl
+#     # start at 1 since we already tried the max above
+#     redund = 1
+#     while redund < k:
+#         best_x = torch.reshape(batch[sorted_inds[redund]], (1, -1)).cpu().double()
+#         acq_val = torch.reshape(preds[sorted_inds[redund]], (1, 1)).cpu().double()
+#         if find_x(best_x, samp_x.cpu()) == False:
+#             break
+#         else:
+#             redund += 1
+#     # print("redund: {}".format(redund))
+#     best_idx = torch.tensor(sorted_inds[redund])
+#     return best_x, acq_val, best_idx
 
 
 def rand_samp(domain: tuple[Tensor, Tensor]) -> Tensor:

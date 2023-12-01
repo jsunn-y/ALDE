@@ -177,7 +177,7 @@ class DNN_FF(torch.nn.Sequential):
                 #this is a pretty conservative early stopping condition, might want to update
                 if overall_min <= recent_min:
                 #stop if the training loss doesn't improve by more that 0.1 in 30 iterations (aproximately a likelihood improvement of 1.1)
-                # if (overall_min - recent_min) < 0.2:
+                # if (overall_min - recent_min)/overall_min < 0.2:
                     print("Early stopping at iteration " + str(i))
                     break
 

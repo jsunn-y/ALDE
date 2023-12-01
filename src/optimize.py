@@ -250,7 +250,19 @@ class BayesianOptimization:
         # train init model on random samples w/ norm y
         print("Creating initial prior.")
 
-        if 'BOOSTING' not in self.mtype:
+        if 'BOOSTING' in self.mtype:
+            if torch.cuda.is_available():
+                    tree_method = 'gpu_hist'
+            else:
+                tree_method = 'hist'
+
+            self.model_kwargs = {
+            'tree_method': tree_method,
+            "objective": "reg:tweedie",
+            "early_stopping_rounds": 10,
+            "nthread": -1
+            }
+        else:
             self.surrogate = models.Model(
                 self.queries_x,
                 torch.reshape(self.norm_y, (1, -1))[0],
@@ -308,7 +320,8 @@ class BayesianOptimization:
                     if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
                         acq.get_preds(self.X_pending)
                 
-                x, acq_val, idx = acq.get_next_query(self.queries_x, self.norm_y)
+                #could speed this up for other acquisition functions, but not TS
+                x, acq_val, idx = acq.get_next_query(self.queries_x, self.norm_y, self.indices)
                 # print(idx)
                 #print(ypred)
                     
@@ -353,7 +366,7 @@ class BayesianOptimization:
         #         max, simp_reg = self.update_trajectory(x.reshape(1,-1), ypred, idx)
         
         if self.savedir is not None:
-                save_tensors()
+            save_tensors()
 
         if self.verbose >= 1: print(f"{os.path.basename(self.savedir)} | Optimization runtime: {datetime.now() - start} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f}")
         
@@ -446,12 +459,8 @@ class BayesianOptimization:
             
             if 'BOOSTING' in self.mtype:
                 assert bootstrap == True
-                model_kwargs = {
-                "objective": "reg:tweedie",
-                "early_stopping_rounds": 10,
-                "nthread": -1
-                }
-                clf = xgb.XGBRegressor(**model_kwargs)
+                #use gpu if available
+                clf = xgb.XGBRegressor(**self.model_kwargs)
                 eval_set = [(X_validation, y_validation)]
                 clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
                 #y_preds = clf.predict(candidate_X)
