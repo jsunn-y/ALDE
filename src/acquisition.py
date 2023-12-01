@@ -213,6 +213,7 @@ class AcquisitionGP(Acquisition):
                     self.preds = mu + delta
                 elif self.acq.upper() == 'GREEDY':
                     self.preds = mu.cpu()
+        self.preds = self.preds.detach().numpy()
 
     def max_obj(self, x):
         #add the extra dimension to specify qbatch is only 1

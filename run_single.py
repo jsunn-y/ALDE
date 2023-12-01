@@ -81,7 +81,7 @@ if __name__ == "__main__":
         print('Context already set.')
     
     # make dir to hold tensors
-    path = '/home/jyang4/repos/DKBO-MLDE/'
+    path = ''
     subdir = path + 'results/test/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DNN-ES_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 

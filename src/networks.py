@@ -608,7 +608,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
         # for n in range(0, X.shape[0], self.gpu_batch_size):
         #     emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).to(self.device)
         
-        emb = torch.zeros((X.shape[0], self.architecture[-1]))
+        emb = torch.zeros((X.shape[0], self.architecture[-2]))
         for n in range(0, X.shape[0], self.gpu_batch_size):
             emb[n:n+self.gpu_batch_size, :] = self.embedding(X[n : n + self.gpu_batch_size].to(self.device)).detach()
         # print(emb[0].shape)
