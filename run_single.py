@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'GB1_AA' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'GB1_ESM2' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     obj = objectives.Combo(encoding)
 
     #obj = objectives.Hartmann_6d()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = ''
-    subdir = path + 'results/test/' + encoding + '/'
+    subdir = path + 'results/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 1
+    runs = 70
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH', 'BOOSTING_ENSEMBLE', 'DNN-ES_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                     elif 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 30, 30, 1]
                     elif 'ESM2' in encoding:
-                        arc  = [domain[0].size(-1), 500, 150, 1] 
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] 
                 elif 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif 'CDKL' in mtype:

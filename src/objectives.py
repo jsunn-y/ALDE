@@ -59,20 +59,20 @@ class Combo(Objective):
     def __init__(self, encoding):
         #for now, just flatten the encodings and manually unflatten later (could be better)
         if 'GB1' in encoding:
-            fitness_df = pd.read_csv('~/repos/data/GB1_fitness.csv')
+            fitness_df = pd.read_csv('/disk1/jyang4/repos/data/GB1_fitness.csv')
             self.y = torch.tensor(fitness_df['fit'].values).double()
             self.y = self.y/self.y.max()
         elif 'TrpB' in encoding:
-            fitness_df = pd.read_csv('~/repos/data/TrpB_fitness.csv')
+            fitness_df = pd.read_csv('/disk1/jyang4/repos/data/TrpB_fitness.csv')
             self.y = torch.tensor(fitness_df['fitness'].values).double()
             self.y = self.y/self.y.max()
 
         if encoding == 'GB1_ESM2':
-            self.X = torch.tensor(np.load('~/repos/data/GB1_ESM2_4site.npy')).double()
+            self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/GB1_ESM2_4site.npy')).double()
             self.X = torch.reshape(self.X, (self.X.shape[0], -1)) #flatten the inputs
 
         elif encoding == 'TrpB_ESM2':
-            self.X = torch.tensor(np.load('~/repos/data/TrpB_ESM2_4site.npy')).double()
+            self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/TrpB_ESM2_4site.npy')).double()
             self.X = torch.reshape(self.X, (self.X.shape[0], -1)) #flatten the inputs
             
             
@@ -85,12 +85,12 @@ class Combo(Objective):
         #     self.y = torch.load('/home/jyang4/repos/data/trpB_onehot_y.pt')
         else:
             if encoding == 'GB1_onehot':
-                self.bwx = '~/repos/data/GB1_onehot_x.pt'
+                self.bwx = '/disk1/jyang4/repos/data/GB1_onehot_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             elif encoding == 'GB1_AA':
                 self.bwx = '/disk1/jyang4/repos/data/GB1_AA_x.pt'
             elif encoding == 'GB1_georgiev':
-                self.bwx = '~/repos/data/GB1_georgiev_x.pt'
+                self.bwx = '/disk1/jyang4/repos/data/GB1_georgiev_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             # elif encoding == 'GB1_ESM1b':
             #     self.bwx = '/home/jyang4/repos/data/GB1_ESM1b_x.pt'
@@ -99,12 +99,12 @@ class Combo(Objective):
             #     self.bwx = '/home/jyang4/repos/data/GB1_TAPE_x.pt'
             #     self.bwy = '/home/jyang4/repos/data/GB1_TAPE_y.pt'
             elif encoding == 'TrpB_onehot':
-                self.bwx = '~/repos/data/TrpB_onehot_x.pt'
+                self.bwx = '/disk1/jyang4/repos/data/TrpB_onehot_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/trpB_onehot_y.pt'
             elif encoding == 'TrpB_AA':
-                self.bwx = '~/repos/data/TrpB_AA_x.pt'
+                self.bwx = '/disk1/jyang4/repos/data/TrpB_AA_x.pt'
             elif encoding == 'TrpB_georgiev':
-                self.bwx = '~/repos/data/TrpB_georgiev_x.pt'
+                self.bwx = '/disk1/jyang4/repos/data/TrpB_georgiev_x.pt'
             
             self.X = torch.load(self.bwx)
             #self.y = torch.load(self.bwy)
