@@ -207,10 +207,12 @@ class BayesianOptimization:
             if self.verbose >= 1: print('Y values saved.')
             torch.save(self.indices.cpu(), self.savedir + 'indices.pt')
             if self.verbose >= 1: print('Indices saved.')
-            botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain)
-            torch.save(botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain), self.savedir + 'x.pt')
-            #torch.save(self.queries_x.cpu(), self.savedir + 'x.pt')
-            if self.verbose >= 1: print('X values saved.')
+
+            #don't save the x values anymore (can be indexed later)
+            # botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain)
+            # torch.save(botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain), self.savedir + 'x.pt')
+            # #torch.save(self.queries_x.cpu(), self.savedir + 'x.pt')
+            # if self.verbose >= 1: print('X values saved.')
 
         def load_tensors():
             if self.verbose >= 1: print('Loading in from: {}'.format(self.savedir))

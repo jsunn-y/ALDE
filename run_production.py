@@ -63,12 +63,11 @@ if __name__ == "__main__":
     # ymax = obj_fn(maxx)
 
     # USER: create objective fn in objectives.py
-    encoding = 'onehot'
-    df = pd.read_csv('/home/jyang4/repos/data/Pgb/test_fivesite.csv')
+    encoding = 'onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv')
     n_samples = len(df)
-    obj = objectives.Production(df, encoding)
-    #TODO: output the order of the combos so that the indices are specific
-    
+    target = 'Diff'
+    obj = objectives.Production(df, encoding, target)
 
     #obj = objectives.Hartmann_6d()
     obj_fn = obj.objective
@@ -85,8 +84,8 @@ if __name__ == "__main__":
         print('Context already set.')
     
     # make dir to hold tensors
-    path = '/home/jyang4/repos/DKBO-MLDE/'
-    subdir = path + 'results/production_test/'
+    path = ''
+    subdir = path + 'results/production/test/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -97,20 +96,37 @@ if __name__ == "__main__":
     runs = 1
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
-    
+    seeds = []
 
+    with open('rndseed.txt', 'r') as f:
+        lines = f.readlines()
+        for i in range(runs):
+            print('run index: {}'.format(index+i))
+            line = lines[i+index].strip('\n')
+            print('seed: {}'.format(int(line)))
+            seeds.append(int(line))
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
     arg_list = []
 
     for r in range(index, index + runs):
-        seed = r
+        seed = seeds[r - index]
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
         kernel='RBF'
-        for mtype in  ['DKL_BOTORCH']:
-            for acq_fn in ['UCB', 'TS']: #'EI', 'UCB','TS'
+        for mtype in ['DNN_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+            for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
+                if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
+                    lr = 1e-1
+                else:
+                    lr = 1e-3
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
                 #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
                 # else:
@@ -118,29 +134,44 @@ if __name__ == "__main__":
                 num_simult_jobs = 1
 
                 #last layer of architecture should be repeated, this gets fed to the GP
-                if 'GP' in mtype:
+                if 'DNN' in mtype and 'ENSEMBLE' in mtype:
+                    if 'onehot' in encoding:
+                        arc  = [domain[0].size(-1), 50, 30, 1]
+                    elif 'AA' in encoding:
+                        arc  = [domain[0].size(-1), 12, 8, 1]
+                    elif 'georgiev' in encoding:
+                        arc  = [domain[0].size(-1), 50, 30, 1]
+                    elif 'ESM2' in encoding:
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] 
+                elif 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
                 elif 'CDKL' in mtype:
-                    if 'onehot' in encoding:
+                    if 'AA' in encoding:
                         #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 32]
+                        arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 1]
+                    elif 'onehot' in encoding:
+                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
+                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 1]
+                        #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
                     elif 'ESM2' in encoding:
-                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 32]
+                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 1]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 40, 20, 10, 10]
+                        arc  = [domain[0].size(-1), 30, 30, 1]
+                    elif 'AA' in encoding:
+                        arc  = [domain[0].size(-1), 8, 8, 1]
+                    elif 'georgiev' in encoding:
+                        arc  = [domain[0].size(-1), 30, 30, 1]
                     else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 50] #becomes DKL automatically if more than two layers
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:
                     #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
                 else:
                     arc = [domain[0].size(-1), 1] #filler architecture for MLDE
 
                 #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
-                if mtype == 'MLDE':
-                    fname = mtype +  '_' + str(r + 1)
-                else:
-                    fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
+                fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
+
                 args = BO_ARGS(
                     # primary args
                     mtype=mtype,
@@ -151,7 +182,7 @@ if __name__ == "__main__":
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,
-                    trainlr=1e-3, #originally 1e-2 in james
+                    trainlr=lr, #originally 1e-2 in james, have also tried 1e-3
                     train_iter=300,
                     dropout=dropout,
                     mcdropout=0,
@@ -167,10 +198,9 @@ if __name__ == "__main__":
                     query_cost=1,
                     queries_x=obj.Xtrain,
                     queries_y=obj.ytrain,
-                    indices=torch.arange(n_samples),
+                    indices=obj.train_indices,
                     savedir=subdir+fname,
-                    batch_size = batch_size,
-                    run_mlde = False
+                    batch_size = batch_size
                 )
                 arg_list.append((args, seed))
 

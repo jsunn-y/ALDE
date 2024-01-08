@@ -131,10 +131,10 @@ class Combo(Objective):
 class Production(Objective):
     name = 'Production'
 
-    def __init__(self, df, encoding):
+    def __init__(self, df, encoding, target):
         train_combos = df['Combo'].tolist()
         self.nsamples = len(train_combos)
-        self.ytrain = torch.tensor(df['Fitness'].values)
+        self.ytrain = df[target].values
         self.Xtrain = generate_onehot(train_combos)
         self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
 
@@ -142,16 +142,26 @@ class Production(Objective):
         
         assert encoding == 'onehot'
         self.all_combos = generate_all_combos(nsites)
-        self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
+        self.train_indices = [self.all_combos.index(combo) for combo in train_combos]
+        #print(self.train_indices)
 
-        np.save("combos.npy", np.array(train_combos + self.test_combos))
+        #self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
 
-        self.Xtest = generate_onehot(self.test_combos)
-        self.Xtest = torch.reshape(self.Xtest, (self.Xtest.shape[0], -1))
-        self.ytest = torch.zeros(len(self.test_combos))
+        np.save("combos.npy", np.array(self.all_combos))
 
-        self.X = torch.tensor(np.concatenate([self.Xtrain, self.Xtest]))
-        self.y = torch.tensor(np.concatenate([self.ytrain, self.ytest]))
+        #for proposal step
+        self.X = torch.reshape(generate_onehot(self.all_combos), (len(self.all_combos), -1))
+        #filler array,used to measure regret, does not affect outcome
+        self.y = np.zeros(len(self.all_combos)) # filler values
+        #replace the indices of y with ytrain
+
+        self.y[self.train_indices] = self.ytrain
+        self.ytrain = torch.tensor(self.ytrain)
+        self.y = torch.tensor(self.y)
+        self.train_indices = torch.tensor(self.train_indices)
+
+        # self.X = torch.tensor(np.concatenate([self.Xtrain, self.Xtest]))
+        # self.y = torch.tensor(np.concatenate([self.ytrain, self.ytest]))
 
     def objective(self, x: Tensor, noise: Noise = 0.) -> tuple[Tensor, Tensor]:
         # need to return actual x queried, not one asked for

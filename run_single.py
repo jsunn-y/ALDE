@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = ''
-    subdir = path + 'results/' + encoding + '/'
+    subdir = path + 'results/test/' + encoding + '/'
     #subdir = path + 'results/Hartmann_6d/'
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print('Script stored.')
 
     # USER: set # runs you wish to perform, and index them for saving
-    runs = 70
+    runs = 1
     # start this at 0, -> however many runs you do total. i.e. 20
     index = 0
     seeds = []
@@ -136,10 +136,14 @@ if __name__ == "__main__":
         print('Random search done.')
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH', 'BOOSTING_ENSEMBLE', 'DNN-ES_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['GP_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
+                if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
+                    lr = 1e-1
+                else:
+                    lr = 1e-3
                 # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
                 #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
                 # else:
@@ -197,7 +201,7 @@ if __name__ == "__main__":
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,
-                    trainlr=1e-3, #originally 1e-2 in james, have also tried 1e-3
+                    trainlr=lr, #originally 1e-2 in james, have also tried 1e-3
                     train_iter=300,
                     dropout=dropout,
                     mcdropout=0,
