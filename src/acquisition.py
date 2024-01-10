@@ -17,7 +17,7 @@ class Acquisition:
     """Generic class for acquisition functions that includes the function and
     its optimizer."""
 
-    def __init__(self, acq_fn_name, domain, queries_x, norm_y, disc_X, verbose, xi, seed_index, save_dir):
+    def __init__(self, acq_fn_name, domain, queries_x, norm_y, normalizer, disc_X, verbose, xi, seed_index, save_dir):
         """Initializes Acquisition object.
         -@param: acq_fn, takes in prior distribution and builds function
         -@param: next_query, optimizes acq_fn and returns next x val.
@@ -32,6 +32,7 @@ class Acquisition:
         self.norm_y = norm_y.double()
         
         self.disc_X = disc_X.double()
+        self.normalizer = normalizer
         self.verbose = verbose
         self.domain = domain # not used bc discrete domain
         self.xi = xi
@@ -68,8 +69,8 @@ class Acquisition:
     #write the methods that must be here 
 
 class AcquisitionEnsemble(Acquisition):
-    def __init__(self, acq_fn_name, domain, queries_x, norm_y, y_preds_full_all, disc_X, verbose, xi, seed_index, save_dir):
-        super().__init__(acq_fn_name, domain, queries_x, norm_y, disc_X, verbose, xi, seed_index, save_dir)
+    def __init__(self, acq_fn_name, domain, queries_x, norm_y, y_preds_full_all, normalizer, disc_X, verbose, xi, seed_index, save_dir):
+        super().__init__(acq_fn_name, domain, queries_x, norm_y, normalizer, disc_X, verbose, xi, seed_index, save_dir)
         self.y_preds_full_all = y_preds_full_all
 
     def get_preds(self, X_pending):
@@ -80,8 +81,8 @@ class AcquisitionEnsemble(Acquisition):
             mu = torch.mean(self.y_preds_full_all, axis = 1)
             sigma = torch.std(self.y_preds_full_all, axis = 1)
             delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
-            torch.save(sigma, self.save_dir + 'sigma.pt')
-            torch.save(mu, self.save_dir + 'mu.pt')
+            torch.save(sigma*self.normalizer, self.save_dir + 'sigma.pt')
+            torch.save(mu*self.normalizer, self.save_dir + 'mu.pt')
             self.preds = mu + delta
         elif self.acq.upper() == 'GREEDY':
             self.preds = torch.mean(self.y_preds_full_all, axis = 1)
@@ -100,8 +101,8 @@ class AcquisitionEnsemble(Acquisition):
         self.preds = self.preds.detach().numpy()
 
 class AcquisitionGP(Acquisition):
-    def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, disc_X, verbose, xi, seed_index, save_dir):
-        super().__init__(acq_fn_name, domain, queries_x, norm_y, disc_X, verbose, xi, seed_index, save_dir)
+    def __init__(self, acq_fn_name, domain, queries_x, norm_y, model, normalizer, disc_X, verbose, xi, seed_index, save_dir):
+        super().__init__(acq_fn_name, domain, queries_x, norm_y, normalizer, disc_X, verbose, xi, seed_index, save_dir)
         self.model = model.double().to(self.device)
 
     def get_embedding(self):
@@ -208,8 +209,8 @@ class AcquisitionGP(Acquisition):
                 if self.acq.upper() == 'UCB':
                     delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
                     #save for uncertainty quantification
-                    torch.save(sigma, self.save_dir + 'sigma.pt')
-                    torch.save(mu, self.save_dir + 'mu.pt')
+                    torch.save(sigma*self.normalizer, self.save_dir + 'sigma.pt')
+                    torch.save(mu*self.normalizer, self.save_dir + 'mu.pt')
                     self.preds = mu + delta
                 elif self.acq.upper() == 'GREEDY':
                     self.preds = mu.cpu()

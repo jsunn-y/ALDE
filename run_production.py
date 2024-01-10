@@ -119,7 +119,7 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(seed)
 
         kernel='RBF'
-        for mtype in ['DNN_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH', 'DNN_ENSEMBLE', 'BOOSTING_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
@@ -157,11 +157,11 @@ if __name__ == "__main__":
                         arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 1]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
-                        arc  = [domain[0].size(-1), 30, 30, 1]
+                        arc  = [domain[0].size(-1), 50, 30, 1]
                     elif 'AA' in encoding:
-                        arc  = [domain[0].size(-1), 8, 8, 1]
+                        arc  = [domain[0].size(-1), 12, 8, 1]
                     elif 'georgiev' in encoding:
-                        arc  = [domain[0].size(-1), 30, 30, 1]
+                        arc  = [domain[0].size(-1), 50, 30, 1]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50, 1] #becomes DKL automatically if more than two layers
                     # if 'ESM2' in encoding:

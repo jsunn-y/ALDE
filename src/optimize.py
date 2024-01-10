@@ -238,7 +238,7 @@ class BayesianOptimization:
 
         # get normalization factor--obj max for test cases and exp. max otherwise
         self.max = torch.max(self.queries_y)
-        self.normalizer = torch.max(torch.abs(self.queries_y))
+        self.normalizer = torch.max(self.queries_y)
         self.preds, self.lcs, self.losses, self.errors = [], [], [], []
         # set max, regret, trainmae, testmae from init queries, assuming >0
         if self.obj_max is not None:
@@ -260,7 +260,7 @@ class BayesianOptimization:
 
             self.model_kwargs = {
             'tree_method': tree_method,
-            "objective": "reg:tweedie",
+            #"objective": "reg:tweedie",
             "early_stopping_rounds": 10,
             "nthread": -1
             }
@@ -311,9 +311,9 @@ class BayesianOptimization:
                 #start = time.time()
                 if self.index == 0:
                     if 'ENSEMBLE' in self.mtype:
-                        acq = acquisition.AcquisitionEnsemble(self.acq_fn, self.domain, self.queries_x, self.norm_y, y_preds_full_all, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
+                        acq = acquisition.AcquisitionEnsemble(self.acq_fn, self.domain, self.queries_x, self.norm_y, y_preds_full_all, self.normalizer, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
                     else:
-                        acq = acquisition.AcquisitionGP(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
+                        acq = acquisition.AcquisitionGP(self.acq_fn, self.domain, self.queries_x, self.norm_y, self.surrogate.model, self.normalizer, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
                         acq.get_embedding()
                     acq.get_preds(None)
                 else:
@@ -414,7 +414,7 @@ class BayesianOptimization:
         if self.verbose >= 3: print("x index: {}, y: {}".format(idx[0], y[0]))
 
         self.max = torch.max(self.queries_y)
-        self.normalizer = torch.max(torch.abs(self.queries_y))
+        self.normalizer = torch.max(self.queries_y)
         # update normalized y tensor
         self.norm_y = self.queries_y / self.normalizer
 
