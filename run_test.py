@@ -94,8 +94,8 @@ if __name__ == "__main__":
 
 
             kernel='RBF' #kernel must be radial basis function, only applies to GP_BOTORCH and DKL_BOTORCH
-            for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH']:
-                for acq_fn in ['GREEDY', 'UCB', 'TS']:
+            for mtype in ['BOOSTING_ENSEMBLE']:
+                for acq_fn in ['GREEDY']:
                     
                     dropout=0 #dropout rate, only applies to neural networks models (DNN_ENSEMBLE and DKL_BOTORCH)
 

@@ -3,6 +3,7 @@ results/
 figs/
 old_runs/
 archived/
+data/
 *.out
 
 # Byte-compiled / optimized / DLL files

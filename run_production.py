@@ -19,8 +19,8 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     
-    encoding = 'onehot'
-    df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv') #path to a csv file with sequence data and associated fitness values
+    encoding = 'ParPgb_onehot'
+    df = pd.read_csv('data/Pgb_fitness.csv') #path to a csv file with sequence data and associated fitness values
     n_samples = len(df)
     obj_col = 'Diff' #name of the fitness column to optimize
     obj = objectives.Production(df, encoding, obj_col)
@@ -43,9 +43,6 @@ if __name__ == "__main__":
     # make dir to hold tensors
     path = 'results/production/'
     subdir = path + 'test/'
-
-    #save the strings of combos for the search space
-    np.save(path + "combos.npy", np.array(obj.all_combos))
 
     os.makedirs(subdir, exist_ok=True)
     os.system('cp ' + __file__ + ' ' + subdir)

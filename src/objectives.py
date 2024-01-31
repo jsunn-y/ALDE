@@ -60,29 +60,8 @@ class Combo(Objective):
             fitness_df = pd.read_csv('/disk1/jyang4/repos/data/TrpB_fitness.csv')
             self.y = torch.tensor(fitness_df['fitness'].values).double()
             self.y = self.y/self.y.max()
-
-        if encoding == 'GB1_ESM2':
-            self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/GB1_ESM2_4site.npy')).double()
-            self.X = torch.reshape(self.X, (self.X.shape[0], -1))
-        elif encoding == 'TrpB_ESM2':
-            self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/TrpB_ESM2_4site.npy')).double()
-            self.X = torch.reshape(self.X, (self.X.shape[0], -1))
-        else:
-            if encoding == 'GB1_onehot':
-                self.bwx = '/disk1/jyang4/repos/data/GB1_onehot_x.pt'
-            elif encoding == 'GB1_AA':
-                self.bwx = '/disk1/jyang4/repos/data/GB1_AA_x.pt'
-            elif encoding == 'GB1_georgiev':
-                self.bwx = '/disk1/jyang4/repos/data/GB1_georgiev_x.pt'
-            elif encoding == 'TrpB_onehot':
-                self.bwx = '/disk1/jyang4/repos/data/TrpB_onehot_x.pt'
-                #self.bwy = '/home/jyang4/repos/data/trpB_onehot_y.pt'
-            elif encoding == 'TrpB_AA':
-                self.bwx = '/disk1/jyang4/repos/data/TrpB_AA_x.pt'
-            elif encoding == 'TrpB_georgiev':
-                self.bwx = '/disk1/jyang4/repos/data/TrpB_georgiev_x.pt'
             
-            self.X = torch.load(self.bwx)
+        self.X = torch.load('/disk1/jyang4/repos/data/' + encoding + '_x.pt')
         
     def objective(self, x: Tensor, noise: Noise = 0.) -> tuple[Tensor, Tensor]:
         qx, qy = utils.query_discrete(self.X, self.y, x)
@@ -112,13 +91,13 @@ class Production(Objective):
         self.Xtrain = generate_onehot(train_combos)
         self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
 
-        nsites = len(df['Combo'][0])
+        name = encoding.split('_')[0]
         
-        assert encoding == 'onehot' #currently only works for onehot encodings, but can be extended to other encodings
-        self.all_combos = generate_all_combos(nsites)
+        assert 'onehot' in encoding #currently only works for onehot encodings, but can be extended to other encodings
+        self.all_combos = list(np.load('data/' + name + '/combos.npy'))
         self.train_indices = [self.all_combos.index(combo) for combo in train_combos]
 
-        self.X = torch.reshape(generate_onehot(self.all_combos), (len(self.all_combos), -1))
+        self.X = torch.load('data/' + name + '/onehot_x.pt')
 
         #filler array,used to measure regret, does not affect outcome
         self.y = np.zeros(len(self.all_combos))
