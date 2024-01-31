@@ -1,11 +1,11 @@
 # Install or update environment
-# conda env update --file env.yml --prune
+# conda env update --file alde.yml --prune
 #
 # Remove environment
-# conda remove --name dkbo --all
+# conda remove --name alde --all
 #
 # last updated: 2022-12-13
-name: dkbo
+name: alde
 channels:
 - pytorch
 - nvidia

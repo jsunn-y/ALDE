@@ -102,7 +102,7 @@ if __name__ == "__main__":
     index = 0
     seeds = []
 
-    with open('rndseed.txt', 'r') as f:
+    with open('src/rndseed.txt', 'r') as f:
         lines = f.readlines()
         for i in range(runs):
             print('run index: {}'.format(index+i))

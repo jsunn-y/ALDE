@@ -37,46 +37,27 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 from gpytorch.priors import HorseshoePrior
 
 '''
-Sample experiment runner script for DK-BO. Launches optimization runs as
+Script to repdouce all of the active learning simulations on GB1 and TrpB datasets. Launches optimization runs as
 separate processes.
-This uses the Hartmann 6D dataset as an example.
 '''
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
 
-    # USER: set up objective func and related values
-    #   -- add your own objective function in objectives.py
-    #   -- OR replace obj_fn with function handle, etc...
-    # fun = botorch.test_functions.synthetic.Hartmann(dim=6, negate=True)#.to(dtype=dtype, device=device)
-    # fun.bounds[0, :].fill_(0)
-    # fun.bounds[1, :].fill_(1)
-    # # dim = fun.dim
-
-    # obj_fn = fun
-    # domain = fun.bounds
-    # disc_X = utils.grid(domain, samp_per_dim=7)
-    # # either compute y_max over all points, or know it before hand. or None.
-    # # for regret computing purposes only
-    # maxx = torch.Tensor([[.20169, .15001, .47687, .27533, .31165, .6573]])
-    # ymax = obj_fn(maxx)
-
     # USER: create objective fn in objectives.py
-    for encoding in ['GB1_AA', 'GB1_georgiev', 'GB1_onehot', 'GB1_ESM2']:
-        #['TrpB_AA', 'TrpB_georgiev', 'TrpB_onehot', 'TrpB_ESM2']
-        #['GB1_AA', 'GB1_georgiev', 'GB1_onehot', 'GB1_ESM2']
+    for encoding in ['GB1_AA', 'GB1_georgiev', 'GB1_onehot', 'GB1_ESM2', 'TrpB_AA', 'TrpB_georgiev', 'TrpB_onehot', 'TrpB_ESM2']:
+        #8 different objectives (2 datasets, each with 4 encodings)
         obj = objectives.Combo(encoding)
 
-        #obj = objectives.Hartmann_6d()
         obj_fn = obj.objective
         domain = obj.get_domain()
         ymax = obj.get_max()
         disc_X = obj.get_points()[0]
         disc_y = obj.get_points()[1]
-        batch_size = 96
+        batch_size = 96 #number of samples to query in each round of active learning
 
-        n_pseudorand_init = 96
-        budget = 96*5 - n_pseudorand_init #budget does not include random initializations
+        n_pseudorand_init = 96 #number of initial random samples
+        budget = 96*5 - n_pseudorand_init #total number of samples to query, not including random initializations
 
         try:
             mp.set_start_method('spawn')
@@ -85,20 +66,16 @@ if __name__ == "__main__":
         
         # make dir to hold tensors
         path = ''
-        subdir = path + 'results/redo/' + encoding + '/'
-        #subdir = path + 'results/Hartmann_6d/'
+        subdir = path + 'results/5x96_simulations/' + encoding + '/'
         os.makedirs(subdir, exist_ok=True)
-        # so have record of all params
-        os.system('cp ' + __file__ + ' ' + subdir)
+        os.system('cp ' + __file__ + ' ' + subdir) #save the script that generated the results
         print('Script stored.')
 
-        # USER: set # runs you wish to perform, and index them for saving
-        runs = 70
-        # start this at 0, -> however many runs you do total. i.e. 20
-        index = 0
+        runs = 70 #number of times to repeat the simulation
+        index = 0 #index of the first run (reads from rndseed.txt to choose the seed)
         seeds = []
 
-        with open('rndseed.txt', 'r') as f:
+        with open('src/rndseed.txt', 'r') as f:
             lines = f.readlines()
             for i in range(runs):
                 print('run index: {}'.format(index+i))
@@ -110,6 +87,7 @@ if __name__ == "__main__":
         
         arg_list = []
 
+        #loop through each of the indices
         for r in range(index, index + runs):
             seed = seeds[r - index]
             torch.manual_seed(seed)
@@ -118,9 +96,8 @@ if __name__ == "__main__":
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
 
+            #do random search baseline
             start_x, start_y, start_indices = utils.samp_discrete(n_pseudorand_init, obj, seed)
-
-            # do random search first
             if budget != 0:
                 _, randy, rand_indices = utils.samp_discrete(budget + 96, obj, seed)
                 randy = torch.cat((start_y, randy), 0) #concatenate to the initial points
@@ -138,9 +115,10 @@ if __name__ == "__main__":
             torch.save(randy, subdir + 'Random_' + str(r + 1) + 'y.pt')
             print('Random search done.')
 
-            kernel='RBF'
-            for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-                for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
+
+            kernel='RBF' #kernel 
+            for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH']:
+                for acq_fn in ['GREEDY', 'UCB', 'TS']:
                     dropout=0
 
                     if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
