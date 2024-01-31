@@ -61,28 +61,27 @@ class NET_ARGS(MapClass):
     p_dropout: float = 0.0
     likelihood: gpytorch.likelihoods.Likelihood = None
     device: torch.device | str = "cuda"
-    inference_args: OPT_ARGS | SAMP_ARGS = None  # use one of below!
 
-@dataclass
-class OPT_ARGS(MapClass):
-    """Struct for models that use a standard optimization protocol (GP, DKL, SVI).
-    Intentionally leaving out: optimizer (Adam), xxx."""
+# @dataclass
+# class OPT_ARGS(MapClass):
+#     """Struct for models that use a standard optimization protocol (GP, DKL, SVI).
+#     Intentionally leaving out: optimizer (Adam), xxx."""
 
-    lr: float = 1e-2
-    num_iter: int = 100
-    verbose: int = 1
+#     lr: float = 1e-2
+#     num_iter: int = 100
+#     verbose: int = 1
 
 
-@dataclass
-class SAMP_ARGS(MapClass):
-    """Struct for models that use a sampling-based protocol (MCMC).
-    Intentionally leaving out: kernel (NUTS), init_strategy (median)."""
+# @dataclass
+# class SAMP_ARGS(MapClass):
+#     """Struct for models that use a sampling-based protocol (MCMC).
+#     Intentionally leaving out: kernel (NUTS), init_strategy (median)."""
 
-    num_warmup: int = 100
-    num_samples: int = 100
-    num_chains: int = 1
-    thinning: int = 2
-    verbose: int = 1
+#     num_warmup: int = 100
+#     num_samples: int = 100
+#     num_chains: int = 1
+#     thinning: int = 2
+#     verbose: int = 1
 
 
 class DNN_FF(torch.nn.Sequential):

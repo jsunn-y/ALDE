@@ -5,7 +5,7 @@ from typing import Literal
 
 import gpytorch
 import src.networks as networks
-from src.networks import NET_ARGS, OPT_ARGS, SAMP_ARGS
+from src.networks import NET_ARGS
 import torch
 from torch import Tensor
 
@@ -47,7 +47,6 @@ class Model:
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        inference_args = OPT_ARGS(lr, num_iter)
         noise_constraint = (
             gpytorch.constraints.GreaterThan(min_noise)
             if min_noise != None
@@ -66,7 +65,6 @@ class Model:
             dropout,
             likelihood,
             self.device,
-            inference_args,
         )
 
     def train(
@@ -87,7 +85,7 @@ class Model:
             train_x, train_y = train_x.to(self.device).double(), train_y.to(self.device).double()
             self.model =  self.model.to(self.device).double()
         
-        self.model.train_model(train_x, train_y, **self.model_args.inference_args)
+        self.model.train_model(train_x, train_y)
 
         return None
 

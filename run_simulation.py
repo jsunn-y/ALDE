@@ -8,7 +8,7 @@ import multiprocessing as mp
 import warnings
 from src.optimize import BayesianOptimization, BO_ARGS
 import src.objectives as objectives
-
+import src.utils as utils
 
 '''
 Script to repdouce all of the active learning simulations on GB1 and TrpB datasets. Launches optimization runs as

@@ -219,12 +219,19 @@ class BayesianOptimization:
             else:
                 tree_method = 'hist'
 
-            self.model_kwargs = {
-            'tree_method': tree_method,
-            "objective": "reg:tweedie",
-            "early_stopping_rounds": 10,
-            "nthread": -1
-            }
+            if min(self.queries_y) >= 0:
+                self.model_kwargs = {
+                'tree_method': tree_method,
+                "objective": "reg:tweedie",
+                "early_stopping_rounds": 10,
+                "nthread": -1
+                }
+            else:
+                self.model_kwargs = {
+                'tree_method': tree_method,
+                "early_stopping_rounds": 10,
+                "nthread": -1
+                }
         else:
             self.surrogate = models.Model(
                 self.queries_x,

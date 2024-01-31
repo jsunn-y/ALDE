@@ -8,6 +8,7 @@ import multiprocessing as mp
 import warnings
 from src.optimize import BayesianOptimization, BO_ARGS
 import src.objectives as objectives
+import src.utils as utils
 
 '''
 Script for predicting a batch of sequences to use in the next round of active learning.
@@ -19,9 +20,9 @@ if __name__ == "__main__":
     print(device)
     
     encoding = 'onehot'
-    df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv')
+    df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv') #path to a csv file with sequence data and associated fitness values
     n_samples = len(df)
-    obj_col = 'Diff'
+    obj_col = 'Diff' #name of the fitness column to optimize
     obj = objectives.Production(df, encoding, obj_col)
 
     obj_fn = obj.objective
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     
     # make dir to hold tensors
     path = 'results/production/'
-    subdir = path + 'round1/'
+    subdir = path + 'test/'
 
     #save the strings of combos for the search space
     np.save(path + "combos.npy", np.array(obj.all_combos))
