@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 import numpy as np
 import pandas as pd
@@ -8,7 +7,7 @@ import torch
 from torch import Tensor
 
 import src.utils as utils
-from src.utils import Noise, ObjectiveFunc
+from src.utils import Noise
 from src.encoding_utils import generate_onehot, generate_all_combos
 
 class Objective:

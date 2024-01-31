@@ -4,7 +4,7 @@ from collections.abc import Sequence, Mapping
 from datetime import datetime
 import os, time, sys
 import random
-from typing import Literal, Callable
+from typing import Literal
 from dataclasses import dataclass, astuple
 
 import botorch

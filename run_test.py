@@ -20,6 +20,7 @@ if __name__ == "__main__":
 
     #8 different objectives (2 datasets, each with 4 encodings)
     for encoding in ['GB1_AA', 'GB1_georgiev', 'GB1_onehot', 'GB1_ESM2', 'TrpB_AA', 'TrpB_georgiev', 'TrpB_onehot', 'TrpB_ESM2']:
+    
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(device)
 
@@ -42,12 +43,12 @@ if __name__ == "__main__":
         
         # make dir to hold tensors
         path = ''
-        subdir = path + 'results/5x96_simulations/' + encoding + '/'
+        subdir = path + 'results/test/' + encoding + '/'
         os.makedirs(subdir, exist_ok=True)
         os.system('cp ' + __file__ + ' ' + subdir) #save the script that generated the results
         print('Script stored.')
 
-        runs = 70 #number of times to repeat the simulation
+        runs = 1 #number of times to repeat the simulation
         index = 0 #index of the first run (reads from rndseed.txt to choose the seed)
         seeds = []
 

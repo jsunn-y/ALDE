@@ -1,50 +1,23 @@
 from __future__ import annotations
-import torch
-import gpytorch
-import botorch
-
 import numpy as np
 import pandas as pd
+import torch
 import random
-# from datetime import datetime
-# import glob
 import os, time
-# import math
 import multiprocessing as mp
-# from concurrent.futures import ProcessPoolExecutor
 import warnings
-
 from src.optimize import BayesianOptimization, BO_ARGS
 import src.objectives as objectives
-import src.utils as utils
-
-from dataclasses import dataclass
-
-import torch
-from botorch.acquisition import qExpectedImprovement
-from botorch.fit import fit_gpytorch_mll
-from botorch.generation import MaxPosteriorSampling
-from botorch.models import SingleTaskGP
-from botorch.optim import optimize_acqf
-from botorch.test_functions import Ackley
-# from botorch.utils.transforms import unnormalize
-from torch.quasirandom import SobolEngine
-
-import gpytorch
-from gpytorch.constraints import Interval
-from gpytorch.kernels import MaternKernel, ScaleKernel
-from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.mlls import ExactMarginalLogLikelihood
-from gpytorch.priors import HorseshoePrior
 
 '''
-Sample experiment runner script for DK-BO. Launches optimization runs as
-separate processes.
-This uses the Hartmann 6D dataset as an example.
+Script for predicting a batch of sequences to use in the next round of active learning.
 '''
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(device)
+    
     encoding = 'onehot'
     df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv')
     n_samples = len(df)
@@ -133,6 +106,8 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 50, 30, 1]
                     else:
                         arc  = [domain[0].size(-1), 500, 150, 50, 1] 
+                else:
+                    arc = [domain[0].size(-1), 1]
 
                 fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
 
