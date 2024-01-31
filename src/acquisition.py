@@ -60,10 +60,6 @@ class Acquisition:
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
         acq_val = self.preds[ind]
         best_idx = torch.tensor(ind)
-        
-        ##alternatively take the closest point in the discrete domain (distance evaluation can be slow)
-        # if utils.find_x(best_x, samp_x.cpu()):
-        #     best_x, acq_val, best_idx = utils.find_next_best(self.disc_X, self.preds, samp_x, samp_y)
 
         return best_x, acq_val, best_idx
     

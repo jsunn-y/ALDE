@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-import os
 from typing import Literal
-import warnings
 
 import gpytorch
 import src.networks as networks
@@ -12,9 +10,6 @@ import torch
 from torch import Tensor
 
 class Model:
-    """Generic class for models, including GP and deep kernel models.
-    common: init (with training, and other), train, evaluate"""
-
     def __init__(
         self,
         train_x: Tensor,
@@ -31,9 +26,7 @@ class Model:
         lr: float = 0.01,
         verbose: int = 1,
     ):
-        """Initializes a Model object (e.g. GP, deep kernel) and trains it.
-        The surrogate model can be extracted by calling .model on the init'd
-        Model object.
+        """Initializes a Model object for training (e.g. GP, DNN_ENSEMBLE, or DKL) and trains it. Note that BOOSTING_ENSEMBLE does not use this model.
 
         Args
             train_x: training inputs
@@ -41,21 +34,19 @@ class Model:
             min_noise: optional double, minimum-noise GP constraint
             num_iter: number of training iterations
             path: path to save model state_dict
-            mtype: one of ['DKL', 'GP']
-            kernel: one of ['RBF', 'Lin']
-            architecture: for DNN (only DK), list of hidden layer sizes
-            dropout: TODO
-            mcdropout: TODO
+            mtype: one of ['GP_BOTORCH', 'DKL_BOTORCH', 'DNN_ENSEMBLE']
+            kernel: one of ['RBF']
+            architecture: list of hidden layer sizes
+            dropout: training dropout for neural network
+            mcdropout: test time dropout for neural network
             lr: learning rate
             verbose: int btwn 0, 3 inclusive
         """
         self.mtype = mtype
-        self.dkl = "DKL" in mtype.upper() or "CDKL" in mtype.upper()
+        self.dkl = "DKL" in mtype.upper()
 
-        # self.path = path
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # setup model structs, likelihood
         inference_args = OPT_ARGS(lr, num_iter)
         noise_constraint = (
             gpytorch.constraints.GreaterThan(min_noise)
@@ -77,14 +68,6 @@ class Model:
             self.device,
             inference_args,
         )
-        # if 'DNN_ENSEMBLE' in self.mtype:
-        #         print('DNN')
-        #         self.model = networks.DNN_FF(**self.model_args)
-        # else:
-        #     if 'BOTORCH' in self.mtype:
-        #         self.model = networks.BoTorchGP(**self.model_args)
-        #     else:
-        #         self.model = networks.GP(**self.model_args)
 
     def train(
         self, train_x, train_y, iter=0, track_lc=False, reset=True, dynamic_arc=None

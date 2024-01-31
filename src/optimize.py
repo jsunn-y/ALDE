@@ -20,13 +20,10 @@ import src.models as models
 import src.utils as utils
 from src.utils import MapClass
 
-#### BO struct ####
-
 @dataclass
 class BO_ARGS(MapClass):
     """General model class args. Each model class can
     take some subset of these as arguments; others discarded."""
-    # dataset
     bb_fn: utils.ObjectiveFunc = None
     domain: tuple[Tensor, Tensor] = None
     disc_X: Tensor = None
@@ -38,7 +35,7 @@ class BO_ARGS(MapClass):
     queries_y: Tensor | None = None
     indices: Tensor | None = None
     # model
-    mtype: Literal['DKL', 'GP'] = 'DKL'
+    mtype: Literal['DNN_ENSEMBLE', 'BOOSTING_ENSEMBLE', 'DKL_BOTORCH', 'GP_BOTORCH'] = 'DNN_ENSEMBLE'
     kernel: str = 'rbf'
     architecture: Sequence[int] = None
     activation: str = 'relu'
@@ -47,25 +44,20 @@ class BO_ARGS(MapClass):
     train_iter: int = 100
     dropout: float = 0.0
     mcdropout: float = 0.0
-    # acquisition
-    acq_fn: str = None # name change
-    xi: float =.1 # make this more transparent
-    # BO
-    budget: int = 300
+    acq_fn: str = None 
+    xi: float = 4
+    budget: int = 384
     query_cost: float = 1.
     savedir: str = 'results/'
     verbose: int = 1 # 0, 1, 2, 3
     seed_index: int = 0
-    run_mlde: bool = True
-    
+    n_splits: int = 5
+    bootstrap_size: float = 0.9
 
-#### Generic Bayesian Optimization framework
+### Generic Bayesian Optimization framework ###
 class BayesianOptimization:
-    '''Generic Bayesian Optimization class. While still budget left, optimizes
-    given surrogate model (current support for GP, DK) and queries objective
-    function.
+    '''Generic Bayesian Optimization class. Simulates active learning (or Bayesian optimization) on a black box function.
     '''
-
     def __init__(self,
                  bb_fn: utils.ObjectiveFunc,
                  domain: tuple[Tensor, Tensor],
@@ -74,16 +66,16 @@ class BayesianOptimization:
                  acq_fn: Literal['EI', 'UCB', 'TS'] | None = None,
                  architecture: Sequence[int] | None = None,
                  activation: str | None = None,
-                 n_rand_init: int = 5,
-                 mtype: Literal['DKL', 'CDKL', 'GP'] = 'DKL',
+                 n_rand_init: int = 0,
+                 mtype: Literal['DNN_ENSEMBLE', 'BOOSTING_ENSEMBLE', 'DKL_BOTORCH', 'GP_BOTORCH'] = 'DNN_ENSEMBLE',
                  dropout=0,
                  mcdropout=0,
-                 train_iter=100,
-                 xi=.1,
-                 trainlr=.01,
+                 train_iter=300,
+                 xi=4,
+                 trainlr=1e-3,
                  kernel='rbf',
-                 budget=100,
-                 batch_size=1,
+                 budget=384,
+                 batch_size=96,
                  query_cost=1,
                  noise_std: float = 0.0,
                  min_noise=None,
@@ -93,58 +85,67 @@ class BayesianOptimization:
                  savedir='',
                  seed_index=0,
                  verbose=True,
-                 run_mlde=True,
+                 n_splits=5,
+                 bootstrap_size=0.9,
                  *_, **__):
-        '''Initialize BayesOpt.
-
+        '''Initialize BO.
         Args:
-            bb_fn: the black box (objective) func, takes in x values and kwarg noise
-            domain: (minx, maxx) tuple where each elem is Tensor of shape [d]
-            acq_fn: name of acquisition function
-            architecture: sizes of layers in NN, inc. input and output dims,
-                set None if not using DKL
-            activation: name of nonlinear activation function, set None if not using DKL
-            n_rand_init: # random points to query at start
-            mtype: name of BO model, one of ['GP', 'DKL']
-            -@param: lr, learning rate
-            -@param: kernel, the base kernel for the GP or deep kernel
-            -@param: budget
-            -@param: query_cost, cost of each query (will be needed for mf)
-            noise_std: std for Gaussian noise
-            min_noise: GP likelihood noise constraint
-            queries_x: any prior inputs queried
-            queries_y: any prior queries, corresponding to queries_x
-        Assuming that the output is a single scalar for now.
+            bb_fn: black box function to optimize
+            domain: tuple of (lower, upper) bounds for each input dimension
+            disc_X: discrete X design space
+            disc_y: discrete y design space
+            acq_fn: name of acquisition function to use
+            architecture: list of hidden layer sizes
+            activation: activation function for neural network
+            n_rand_init: number of random samples to further initialize
+            mtype: one of ['GP_BOTORCH', 'DKL_BOTORCH', 'DNN_ENSEMBLE', 'BOOSTING_ENSEMBLE']
+            dropout: training dropout for neural network
+            mcdropout: test time dropout for neural network
+            train_iter: number of training iterations
+            xi: xi term for UCB
+            trainlr: learning rate
+            kernel: kernel for GP or DKL
+            budget: number of queries to obtain
+            batch_size: number of queries to obtain after each model is trained
+            query_cost: cost of each query
+            noise_std: noise
+            min_noise: minimum noise constraint for GP
+            queries_x: initial x inputs from random initialization
+            queries_y: initial y inputs from random initialization
+            indices: initial indices of the inputs, based on the full dataset
+            savedir: directory to save results
+            seed_index: random seed
+            verbose: int btwn 0, 3 inclusive
+            n_splits: number of splits to use for ensemble models
+            bootstrap_size: size of the bootstrap sample for ensemble models
         '''
 
         print("\nInitializing Bayesian Optimization.----------------------\n")
-        # normalize domain and get reversion func, conversion func
-        self.seed_index = seed_index #random seed
+        self.seed_index = seed_index
         self.domain = domain
-        # normalize full x set for certain acq fns
+        # normalize encoding to be between 0 and 1
         if disc_X is not None:
             self.disc_X = botorch.utils.transforms.normalize(disc_X, self.domain)
-            #self.disc_X = disc_X
         self.disc_y = disc_y
         self.obj_max = torch.max(disc_y).double()
         self.verbose = verbose
         self.acq_fn = acq_fn
-        self.run_mlde = run_mlde
         self.xi = xi
+        self.n_splits = n_splits
+        self.bootstrap_size = bootstrap_size
 
-        # init existing samples and normalize inputs
+        #init existing samples and normalize inputs
         if queries_x is None or queries_y is None:
             assert queries_x is None
             assert queries_y is None
             self.queries_x = torch.empty(0)
             self.queries_y = torch.empty(0)
         else:
-            self.queries_x = queries_x
-            self.queries_y = queries_y
+            self.queries_x = queries_x #keeps track of the encodings for queried samples
+            self.queries_y = queries_y #keeps track of the labels for queried samples
             print(f'Num prev. inputs: {queries_x.size(0)}')
-            # normalize each init input
             self.queries_x = botorch.utils.transforms.normalize(self.queries_x, domain)
-        self.indices = indices
+        self.indices = indices #keeps track of the indices for queried samples, based on the compelte dataset
 
         # set up noise func
         def noise() -> float | Tensor:
@@ -155,20 +156,10 @@ class BayesianOptimization:
         self.noise = noise
 
         self.bb_fn = bb_fn
-        # add rand
-        if n_rand_init > 0:
-            if self.verbose >= 1: print(f'Initializing {n_rand_init} random samples.')
-            # Pretty sure this doesn't work anymore, need to use discrete_sample but don't have obj object
-            rand_x, rand_y = utils.batch_rand_samp(n_rand_init, domain, self.bb_fn, noise=self.noise)
-            # normalize x after querying
-            self.queries_x = torch.cat((self.queries_x, botorch.utils.transforms.normalize(rand_x, domain)), dim=0)
-            self.queries_y = torch.cat((self.queries_y, rand_y), dim=0)
-            if self.verbose >= 1: print('Used {n_rand_init}/{budget} \n')
 
         # init rest of variables
         self.mtype = mtype
-        # TODO: fix this in models.py; for now, true for all non bayesian models
-        self.reset = True #(mtype != 'GP')  # don't reset if GP
+        self.reset = True 
         self.budget = budget
         self.batch_size = batch_size
         self.cost = 0
@@ -181,25 +172,20 @@ class BayesianOptimization:
         self.likelihood = gpytorch.likelihoods.GaussianLikelihood()
         self.min_noise = min_noise
         self.dropout, self.mcdropout = dropout, mcdropout
-        self.arc_fn = (lambda arc, n, budget: arc) # ID fn as default.
+        self.arc_fn = (lambda arc, n, budget: arc)
         self.savedir = savedir
-        
 
-        # TODO: cont, discr obj selection
-        # add multiple acquisition functions if desired
         if self.verbose >= 1: print("Initialization completed.\n")
 
     def optimize(self,) -> tuple:
-        '''Main loop of bayesian optimization. Runs until budget is exhausted.
-
-        Args:
-            disc_X: list of discrete X inputs
-            obj_max: double, max of obj_fn if known for evaluation purposes
-
-        Returns: final posterior model, a MVN
-        '''
+        """
+        Main loop of bayesian optimization. Runs until budget is exhausted.
+        """
 
         def save_tensors():
+            """
+            Save informatino about the queries, including the regret, y values, and indices.
+            """
             print('Saving: {}'.format(self.savedir))
             if self.obj_max is not None:
                 torch.save(self.regret.cpu(), self.savedir + 'regret.pt')
@@ -208,39 +194,15 @@ class BayesianOptimization:
             if self.verbose >= 1: print('Y values saved.')
             torch.save(self.indices.cpu(), self.savedir + 'indices.pt')
             if self.verbose >= 1: print('Indices saved.')
-
-            #don't save the x values anymore (can be indexed later)
-            # botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain)
-            # torch.save(botorch.utils.transforms.unnormalize(self.queries_x.cpu(), self.domain), self.savedir + 'x.pt')
-            # #torch.save(self.queries_x.cpu(), self.savedir + 'x.pt')
-            # if self.verbose >= 1: print('X values saved.')
-
-        def load_tensors():
-            if self.verbose >= 1: print('Loading in from: {}'.format(self.savedir))
-            try:
-                if self.obj_max is not None:
-                    self.regret = torch.load(self.savedir + 'regret.pt')
-                    if self.verbose >= 1: print('Regret loaded.')
-                self.queries_y = torch.load(self.savedir + 'y.pt')
-                if self.verbose >= 1: print('Y values loaded.')
-                self.indices = torch.load(self.savedir + 'indices.pt')
-                if self.verbose >= 1: print('Indices loaded.')
-                self.queries_x = botorch.utils.transforms.normalize(torch.load(self.savedir + 'x.pt'), self.domain)
-                if self.verbose >= 1: print('X values loaded.')
-                self.cost = self.regret.shape[-1] - 1 # b/c takes regret at start before queries
-            except Exception as e:
-                if self.verbose >= 1: print(f'Could not load tensors: {e}')
             
         if self.verbose >= 1: print("Beginning optimization, {}.-----------------\n".format(os.path.basename(self.savedir)))
         start = datetime.now()
 
-        #don't do this for now
-        #load_tensors() # resume progress if possible
-
-        # get normalization factor--obj max for test cases and exp. max otherwise
+        #normalize to the max y of the training data
         self.max = torch.max(self.queries_y)
         self.normalizer = torch.max(self.queries_y)
         self.preds, self.lcs, self.losses, self.errors = [], [], [], []
+
         # set max, regret, trainmae, testmae from init queries, assuming >0
         if self.obj_max is not None:
             simp_reg = torch.reshape(torch.abs(self.obj_max - self.max), (1,1))
@@ -251,8 +213,6 @@ class BayesianOptimization:
         self.norm_y = self.queries_y / self.normalizer #normalized y_queries
 
         # train init model on random samples w/ norm y
-        print("Creating initial prior.")
-
         if 'BOOSTING' in self.mtype:
             if torch.cuda.is_available():
                     tree_method = 'gpu_hist'
@@ -281,35 +241,17 @@ class BayesianOptimization:
                 lr=self.trainlr,
                 verbose=self.verbose)
         
-        
-        # main loop; form and optimize acq_func to find next query x based on model (prior)
+        # main loop; form and optimize acq_func to find next query x based on model
         while self.cost < self.budget:
             
+            #ensemble models
             if 'ENSEMBLE' in self.mtype:
-            #x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
-                y_preds_full_all = self.train_predict_ensemble(self.queries_x, self.norm_y, bootstrap=True)
+                y_preds_full_all = self.train_predict_ensemble(self.queries_x, self.norm_y)
+            #GP models
             else:
-                #start = time.time()
-                #chekc the reset stuff
                 _ = self.surrogate.train(self.queries_x, torch.reshape(self.norm_y, (1, -1))[0], reset=True)
-                #print('Train time: ', time.time()-start)
 
             for self.index in range(self.batch_size):
-
-                #loop through each of the models and acquisition function types
-                # if 'MLDE' in self.mtype:
-                #     # #need to update this to produce the correct index
-                #     # if self.batch_size == 1:
-                #     #     x = x_list.reshape(1,-1)
-                #     #     ypred = ypred_list
-                #     #     idx = idx_list
-                #     # else:
-                #     #     #check the dimension of x here
-                #     #     x = x_list[self.index].reshape(1,-1)
-                #     #     ypred = ypred_list[self.index]
-                #     #     idx = idx_list[self.index]
-                # else:
-                #start = time.time()
                 if self.index == 0:
                     if 'ENSEMBLE' in self.mtype:
                         acq = acquisition.AcquisitionEnsemble(self.acq_fn, self.domain, self.queries_x, self.norm_y, y_preds_full_all, self.normalizer, disc_X=self.disc_X, verbose=self.verbose, xi = self.xi, seed_index = self.seed_index, save_dir = self.savedir)
@@ -318,67 +260,102 @@ class BayesianOptimization:
                         acq.get_embedding()
                     acq.get_preds(None)
                 else:
-                    #TS requires a new acquisition function each time
-                    #Submodular optimizaiton of qEI requires reevaluation given pending points
-                    if self.acq_fn == 'TS' or self.acq_fn == 'QEI':
+                    #Thompson sampling requires a new acquisition function each time
+                    if self.acq_fn == 'TS':
                         acq.get_preds(self.X_pending)
                 
-                #could speed this up for other acquisition functions, but not TS
                 x, acq_val, idx = acq.get_next_query(self.queries_x, self.norm_y, self.indices)
-                # print(idx)
-                #print(ypred)
-                    
-                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=None)
-
-                    # elif self.acq_fn != 'TS':
-                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=preds, embeddings=None)
-                    # else:
-                        #x, ypred, idx, preds, embeddings = self.acq.get_next_query(self.queries_x, self.norm_y, self.surrogate.model, disc_X=self.disc_X, verbose=self.verbose, index=index, preds=None, embeddings=embeddings)
-
-                    #print('Evaluation time: ', time.time()-start)
-
                 max, simp_reg = self.update_trajectory(x, acq_val, idx)
 
             # track progress at intervals
-            # only save progress outside of the batch training
             if self.savedir is not None and self.cost%(24) == 0:
                 save_tensors()
 
-            # if self.cost < self.budget:
-            #     if self.mtype == 'MLDE':
-            #         x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y, self.batch_size)
-            #     else:
-            #         _ = self.surrogate.train(self.queries_x, self.norm_y, reset=self.reset, dynamic_arc=self.arc_fn(self.architecture, self.queries_y.size(0), self.budget))
-            
-            #don't stop early
-            # if simp_reg == 0:
-            #     final_reg = torch.zeros(1,(self.budget-self.cost))
-            #     self.regret = torch.cat((self.regret,final_reg),-1)
-            #     if self.verbose >= 3: print(f'Regret is 0, terminating early at {self.cost}/{self.budget} budget.')
-            #     break
-        
-        #do MLDE at the end
-        #if self.cost < self.budget + 96:
-
-        #need to update this
-        # if self.run_mlde:
-        #     print('Running MLDE for final 96 queries.')
-        #     x_list, ypred_list, idx_list = self.train_predict_mlde_lite(self.queries_x, self.norm_y)
-        #     #check the dimension of x here
-        #     for x, ypred, idx in zip(x_list, ypred_list, idx_list):
-        #         max, simp_reg = self.update_trajectory(x.reshape(1,-1), ypred, idx)
-        
         if self.savedir is not None:
             save_tensors()
 
         if self.verbose >= 1: print(f"{os.path.basename(self.savedir)} | Optimization runtime: {datetime.now() - start} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f}")
         
         return
+    
+    def update_trajectory(self, x, acq_val, idx):
+        """
+        Update the trajectory of the optimization.
+        x: new point to query
+        acq_val: acquisition function value at x
+        idx: index of x in the discrete domain
+        """
+        with torch.no_grad():
+            x_ind = torch.reshape(x[0], (1, -1))
 
+            ## For finding the closest point in the discrete domain (slow)
+            # y = self.bb_fn(botorch.utils.transforms.unnormalize(x_ind, self.domain), noise=self.noise())
+            # #y = self.bb_fn(x_ind, noise=self.noise())
+            # if len(y) == 2: y = y[-1]
+
+            y = self.disc_y[idx]
+
+            y = torch.reshape(y, (1, 1))[0]
+            idx = torch.reshape(idx, (1, 1))[0]
+        
+        self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
+        self.X_pending = self.queries_x[-self.index-1:] #new points from the batch
+        self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
+        self.indices = torch.cat((self.indices, idx.double()), dim=0)
+        
+        if self.verbose >= 3: print("x index: {}, y: {}".format(idx[0], y[0]))
+
+        self.max = torch.max(self.queries_y)
+        self.normalizer = torch.max(self.queries_y)
+        self.norm_y = self.queries_y / self.normalizer
+        self.cost += self.query_cost
+
+        # update regr eval
+        if self.obj_max is not None:
+            simp_reg = torch.reshape(torch.abs(self.obj_max - self.max), (1,1))
+            self.regret = torch.cat((self.regret, simp_reg), -1)
+            max = torch.reshape(self.max/self.obj_max, (1,1))
+
+            if self.cost%(24) == 0:
+                if self.verbose >= 2: print(f"\n{os.path.basename(self.savedir)} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f} | Used {self.cost}/{self.budget} budget.\n\n")
+
+        return max, simp_reg
+        
+    def train_predict_ensemble(self, X_train_all, y_train_all):
+        """
+        Training and prediction loop for ensemble models.
+        X_train_all: all of the training data
+        y_train_all: all of the training labels
+        bootstrap: whether to bootstrap the training data during ensembling
+        """
+        y_preds_full_all = np.zeros((self.disc_X.shape[0], self.n_splits))
+        bootstrap = self.bootstrap_size < 1
+        for i in range(self.n_splits):
+            if bootstrap == True:
+                #split for training and validation
+                X_train, X_validation, y_train, y_validation = train_test_split(X_train_all, y_train_all, test_size=1-self.bootstrap_size, random_state=self.seed_index + i)
+            else:
+                X_train = X_train_all
+                y_train = y_train_all
+                X_validation = None
+                y_validation = None
+            
+            if 'BOOSTING' in self.mtype:
+                assert bootstrap == True
+                clf = xgb.XGBRegressor(**self.model_kwargs)
+                eval_set = [(X_validation, y_validation)]
+                clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
+                y_preds_full = clf.predict(self.disc_X)
+            elif 'DNN' in self.mtype:
+                _ = self.surrogate.train(X_train, torch.reshape(y_train, (-1, 1)), reset=True)
+                y_preds_full = self.surrogate.model(self.disc_X.to(self.surrogate.model.device)).detach().cpu().numpy().reshape(-1)
+
+            y_preds_full_all[:, i] = y_preds_full
+
+        return torch.tensor(y_preds_full_all)
+    
     @staticmethod
     def run(kwargs, seed):
-    # def run(arg):
-        # kwargs, seed = arg
         print(f'Now launching {kwargs.savedir.split("/")[-1]}')
         if seed is not None:
             torch.backends.cudnn.deterministic = True
@@ -393,120 +370,6 @@ class BayesianOptimization:
         test = BayesianOptimization(**kwargs)
         res = test.optimize()
         return res
-    
-    def update_trajectory(self, x, acq_val, idx):
-        with torch.no_grad():
-            x_ind = torch.reshape(x[0], (1, -1))
-
-            # #TODO: replace this, finding the closest point is the slow step because calculating distance scales with encoding size and square of design space
-            # y = self.bb_fn(botorch.utils.transforms.unnormalize(x_ind, self.domain), noise=self.noise())
-            # #y = self.bb_fn(x_ind, noise=self.noise())
-            # if len(y) == 2: y = y[-1]
-            y = self.disc_y[idx]
-
-            y = torch.reshape(y, (1, 1))[0]
-            idx = torch.reshape(idx, (1, 1))[0]
-        
-        #print(x_ind.shape)
-        self.queries_x = torch.cat((self.queries_x, x_ind.double()), dim=0)
-        self.X_pending = self.queries_x[-self.index-1:] #new points from the batch
-
-
-        self.queries_y = torch.cat((self.queries_y, y.double()), dim=0)
-        self.indices = torch.cat((self.indices, idx.double()), dim=0)
-        
-        #self.preds.append(acq_val * self.normalizer)
-        if self.verbose >= 3: print("x index: {}, y: {}".format(idx[0], y[0]))
-
-        self.max = torch.max(self.queries_y)
-        self.normalizer = torch.max(self.queries_y)
-        # update normalized y tensor
-        self.norm_y = self.queries_y / self.normalizer
-
-        self.cost += self.query_cost
-
-        # update regr eval
-        if self.obj_max is not None:
-            simp_reg = torch.reshape(torch.abs(self.obj_max - self.max), (1,1))
-            self.regret = torch.cat((self.regret, simp_reg), -1)
-            max = torch.reshape(self.max/self.obj_max, (1,1))
-
-            if self.cost%(24) == 0:
-                if self.verbose >= 2: print(f"\n{os.path.basename(self.savedir)} | Max: {max.item():.4f} | Regret: {simp_reg.item():.4f} | Used {self.cost}/{self.budget} budget.\n\n")
-
-        return max, simp_reg
-        
-
-    def train_predict_ensemble(self, X_train_all, y_train_all, bootstrap=True):
-        """
-        Simplified training and prediction loop for MLDE. Always uses greedy acquisition.
-        """
-        
-        #remove the already queried pts from disc_X (is this slower than james other way?)
-        # train_indices = []
-        # for row in X_train:
-        #     train_indices.append(np.where((self.disc_X == row).all(axis=1))[0])
-        #train_indices = self.indices.numpy().astype(int)
-
-        #candidate_X = np.delete(self.disc_X, train_indices, 0)
-        #all_indices = np.arange(self.disc_X.shape[0])
-        #candidate_indices = np.delete(all_indices, train_indices, 0)
-        #y_preds_all = np.zeros((candidate_X.shape[0], 5))
-
-        y_preds_full_all = np.zeros((self.disc_X.shape[0], 5))
-
-        for i in range(5):
-            if bootstrap == True:
-                X_train, X_validation, y_train, y_validation = train_test_split(X_train_all, y_train_all, test_size=0.1, random_state=self.seed_index + i)
-            else:
-                X_train = X_train_all
-                y_train = y_train_all
-                X_validation = None
-                y_validation = None
-            
-            if 'BOOSTING' in self.mtype:
-                assert bootstrap == True
-                #use gpu if available
-                clf = xgb.XGBRegressor(**self.model_kwargs)
-                eval_set = [(X_validation, y_validation)]
-                clf.fit(X_train, y_train, eval_set=eval_set, verbose=False)
-                #y_preds = clf.predict(candidate_X)
-                #y_preds_all[:, i] = y_preds
-
-                y_preds_full = clf.predict(self.disc_X)
-            elif 'DNN' in self.mtype:
-                #_ = self.surrogate.train(self.queries_x, torch.reshape(self.norm_y, (1, -1))[0], reset=False)
-                #print(X_train.shape)
-                #print(y_train.shape)
-                _ = self.surrogate.train(X_train, torch.reshape(y_train, (-1, 1)), reset=True)
-                #TODO: see if you need to put this on gpu
-                y_preds_full = self.surrogate.model(self.disc_X.to(self.surrogate.model.device)).detach().cpu().numpy().reshape(-1)
-                #print(y_preds_full.shape)
-
-            y_preds_full_all[:, i] = y_preds_full
-
-        #y_preds = np.mean(y_preds_all, axis = 1)
-        #y_preds_std = np.std(y_preds_all, axis = 1)
-        return torch.tensor(y_preds_full_all)
-
-
-        # #only for UQ
-        # mu = np.mean(y_preds_full_all, axis = 1)
-        # sigma = np.std(y_preds_full_all, axis = 1)
-
-        # if self.acq_fn == 'UCB':
-        #     delta = (self.xi * torch.ones_like(y_preds)).sqrt() *y_preds_std
-        #     y_preds = y_preds + delta
-
-        # torch.save(torch.tensor(mu), self.savedir + 'mu.pt')
-        # torch.save(torch.tensor(sigma), self.savedir + 'sigma.pt')
-
-        # top_candidate_indices = torch.topk(y_preds, num_preds).indices
-        # top_X = candidate_X[top_candidate_indices]
-        # top_y_preds = y_preds[top_candidate_indices]
-        # top_indices = torch.tensor(candidate_indices[top_candidate_indices])
-
-        # return top_X, top_y_preds, top_indices
     
     
 

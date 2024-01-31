@@ -1,7 +1,3 @@
-'''
-Collection of test functions. Each has obj function call, as well as get_max(), get_domain(), get_points().
-All are framed as maximization problems.
-'''
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -57,7 +53,6 @@ class Combo(Objective):
     name = 'combinatorial_library'
 
     def __init__(self, encoding):
-        #for now, just flatten the encodings and manually unflatten later (could be better)
         if 'GB1' in encoding:
             fitness_df = pd.read_csv('/disk1/jyang4/repos/data/GB1_fitness.csv')
             self.y = torch.tensor(fitness_df['fit'].values).double()
@@ -69,35 +64,17 @@ class Combo(Objective):
 
         if encoding == 'GB1_ESM2':
             self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/GB1_ESM2_4site.npy')).double()
-            self.X = torch.reshape(self.X, (self.X.shape[0], -1)) #flatten the inputs
-
+            self.X = torch.reshape(self.X, (self.X.shape[0], -1))
         elif encoding == 'TrpB_ESM2':
             self.X = torch.tensor(np.load('/disk1/jyang4/repos/data/TrpB_ESM2_4site.npy')).double()
-            self.X = torch.reshape(self.X, (self.X.shape[0], -1)) #flatten the inputs
-            
-            
-        # elif encoding == 'trpB_ESM2':
-        #     combo_df = pd.read_csv('/home/jyang4/repos/data/Tm9D8s_combo_ESM.csv')
-        #     fitness_df = pd.read_csv('/home/jyang4/repos/data/Tm9D8s_fitness.csv')
-        #     indices =  combo_df[combo_df['combo'].isin(fitness_df['Combo'])].index.values
-        #     #need to make sure the order didn't get mixed up here
-        #     self.X = torch.tensor(np.load('/home/jyang4/repos/data/trpB_esm2_1280_meanpooled.npy')).float()[indices]
-        #     self.y = torch.load('/home/jyang4/repos/data/trpB_onehot_y.pt')
+            self.X = torch.reshape(self.X, (self.X.shape[0], -1))
         else:
             if encoding == 'GB1_onehot':
                 self.bwx = '/disk1/jyang4/repos/data/GB1_onehot_x.pt'
-                #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
             elif encoding == 'GB1_AA':
                 self.bwx = '/disk1/jyang4/repos/data/GB1_AA_x.pt'
             elif encoding == 'GB1_georgiev':
                 self.bwx = '/disk1/jyang4/repos/data/GB1_georgiev_x.pt'
-                #self.bwy = '/home/jyang4/repos/data/GB1_onehot_y.pt'
-            # elif encoding == 'GB1_ESM1b':
-            #     self.bwx = '/home/jyang4/repos/data/GB1_ESM1b_x.pt'
-            #     self.bwy = '/home/jyang4/repos/data/GB1_ESM1b_y.pt'
-            # elif encoding == 'GB1_TAPE':
-            #     self.bwx = '/home/jyang4/repos/data/GB1_TAPE_x.pt'
-            #     self.bwy = '/home/jyang4/repos/data/GB1_TAPE_y.pt'
             elif encoding == 'TrpB_onehot':
                 self.bwx = '/disk1/jyang4/repos/data/TrpB_onehot_x.pt'
                 #self.bwy = '/home/jyang4/repos/data/trpB_onehot_y.pt'
@@ -107,10 +84,8 @@ class Combo(Objective):
                 self.bwx = '/disk1/jyang4/repos/data/TrpB_georgiev_x.pt'
             
             self.X = torch.load(self.bwx)
-            #self.y = torch.load(self.bwy)
         
     def objective(self, x: Tensor, noise: Noise = 0.) -> tuple[Tensor, Tensor]:
-        # need to return actual x queried, not one asked for
         qx, qy = utils.query_discrete(self.X, self.y, x)
         return qx.double(), qy.double()
 
@@ -140,29 +115,21 @@ class Production(Objective):
 
         nsites = len(df['Combo'][0])
         
-        assert encoding == 'onehot'
+        assert encoding == 'onehot' #currently only works for onehot encodings, but can be extended to other encodings
         self.all_combos = generate_all_combos(nsites)
         self.train_indices = [self.all_combos.index(combo) for combo in train_combos]
-        #print(self.train_indices)
 
-        #self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
-
-        #for proposal step
         self.X = torch.reshape(generate_onehot(self.all_combos), (len(self.all_combos), -1))
+
         #filler array,used to measure regret, does not affect outcome
-        self.y = np.zeros(len(self.all_combos)) # filler values
-        #replace the indices of y with ytrain
+        self.y = np.zeros(len(self.all_combos))
 
         self.y[self.train_indices] = self.ytrain
         self.ytrain = torch.tensor(self.ytrain)
         self.y = torch.tensor(self.y)
         self.train_indices = torch.tensor(self.train_indices)
 
-        # self.X = torch.tensor(np.concatenate([self.Xtrain, self.Xtest]))
-        # self.y = torch.tensor(np.concatenate([self.ytrain, self.ytest]))
-
     def objective(self, x: Tensor, noise: Noise = 0.) -> tuple[Tensor, Tensor]:
-        # need to return actual x queried, not one asked for
         qx, qy = utils.query_discrete(self.X, self.y, x)
         return qx.double(), qy.double()
 

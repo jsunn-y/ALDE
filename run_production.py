@@ -45,39 +45,21 @@ This uses the Hartmann 6D dataset as an example.
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-
-    # USER: set up objective func and related values
-    #   -- add your own objective function in objectives.py
-    #   -- OR replace obj_fn with function handle, etc...
-    # fun = botorch.test_functions.synthetic.Hartmann(dim=6, negate=True)#.to(dtype=dtype, device=device)
-    # fun.bounds[0, :].fill_(0)
-    # fun.bounds[1, :].fill_(1)
-    # # dim = fun.dim
-
-    # obj_fn = fun
-    # domain = fun.bounds
-    # disc_X = utils.grid(domain, samp_per_dim=7)
-    # # either compute y_max over all points, or know it before hand. or None.
-    # # for regret computing purposes only
-    # maxx = torch.Tensor([[.20169, .15001, .47687, .27533, .31165, .6573]])
-    # ymax = obj_fn(maxx)
-
-    # USER: create objective fn in objectives.py
-    encoding = 'onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
+    encoding = 'onehot'
     df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv')
     n_samples = len(df)
     obj_col = 'Diff'
     obj = objectives.Production(df, encoding, obj_col)
 
-    #obj = objectives.Hartmann_6d()
     obj_fn = obj.objective
     domain = obj.get_domain()
     ymax = obj.get_max()
     disc_X = obj.get_points()[0]
     disc_y = obj.get_points()[1]
+    
+    #number of proposals to screen in the next round
     batch_size = 96
-
-    budget = 96 #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
+    budget = batch_size
 
     try:
         mp.set_start_method('spawn')
@@ -92,14 +74,11 @@ if __name__ == "__main__":
     np.save(path + "combos.npy", np.array(obj.all_combos))
 
     os.makedirs(subdir, exist_ok=True)
-    # so have record of all params
     os.system('cp ' + __file__ + ' ' + subdir)
     print('Script stored.')
 
-    # USER: set # runs you wish to perform, and index them for saving
-    runs = 1
-    # start this at 0, -> however many runs you do total. i.e. 20
-    index = 0
+    runs = 1 #only perform one prediction
+    index = 0 #for reproducibility
     seeds = []
 
     with open('src/rndseed.txt', 'r') as f:
@@ -123,21 +102,17 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(seed)
 
         kernel='RBF'
-        for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH',]: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
-            for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
+        for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH',]: 
+            for acq_fn in ['GREEDY', 'UCB', 'TS']: 
                 dropout=0
 
                 if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
                     lr = 1e-1
                 else:
                     lr = 1e-3
-                # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
-                #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
-                # else:
-                #     num_simult_jobs = 10
+                
                 num_simult_jobs = 1
 
-                #last layer of architecture should be repeated, this gets fed to the GP
                 if 'DNN' in mtype and 'ENSEMBLE' in mtype:
                     if 'onehot' in encoding:
                         arc  = [domain[0].size(-1), 50, 30, 1]
@@ -148,7 +123,7 @@ if __name__ == "__main__":
                     elif 'ESM2' in encoding:
                         arc  = [domain[0].size(-1), 500, 150, 50, 1] 
                 elif 'GP' in mtype:
-                    arc = [domain[0].size(-1), 1] #use this architecture for GP
+                    arc = [domain[0].size(-1), 1]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
                         arc  = [domain[0].size(-1), 50, 30, 1]
@@ -157,31 +132,23 @@ if __name__ == "__main__":
                     elif 'georgiev' in encoding:
                         arc  = [domain[0].size(-1), 50, 30, 1]
                     else:
-                        arc  = [domain[0].size(-1), 500, 150, 50, 1] #becomes DKL automatically if more than two layers
-                    # if 'ESM2' in encoding:
-                    #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
-                else:
-                    arc = [domain[0].size(-1), 1] #filler architecture for MLDE
+                        arc  = [domain[0].size(-1), 500, 150, 50, 1] 
 
-                #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
                 fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
 
                 args = BO_ARGS(
-                    # primary args
                     mtype=mtype,
                     kernel=kernel,
                     acq_fn=acq_fn,
-                    # secondary args
                     xi=4,
                     architecture=arc,
                     activation='lrelu',
                     min_noise=1e-6,
-                    trainlr=lr, #originally 1e-2 in james, have also tried 1e-3
+                    trainlr=lr,
                     train_iter=300,
                     dropout=dropout,
                     mcdropout=0,
                     verbose=2,
-                    # usually don't change
                     bb_fn=obj_fn,
                     domain=domain,
                     disc_X=disc_X,
