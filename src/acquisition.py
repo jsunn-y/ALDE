@@ -29,6 +29,7 @@ class Acquisition:
 
         self.acq = acq_fn_name
         self.queries_x = queries_x.double().to(self.device)
+        self.nqueries = queries_x.shape[0]
         self.norm_y = norm_y.double()
         
         self.disc_X = disc_X.double()
@@ -50,7 +51,8 @@ class Acquisition:
         #print(samp_indices)
 
         #print(samp_indices)
-        self.preds[np.array(samp_indices, dtype=int)] = min(self.preds)
+        self.preds[np.array(samp_indices, dtype=int)] = min(self.preds) #set the already queired values to 0, might have a more efficient way to do this
+
         ind = np.argmax(self.preds)
         best_x = torch.reshape(self.disc_X[ind].detach(), (1, -1)).double()
         acq_val = self.preds[ind]#.detach().double()
@@ -81,12 +83,13 @@ class AcquisitionEnsemble(Acquisition):
             mu = torch.mean(self.y_preds_full_all, axis = 1)
             sigma = torch.std(self.y_preds_full_all, axis = 1)
             delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
-            torch.save(sigma*self.normalizer, self.save_dir + 'sigma.pt')
-            torch.save(mu*self.normalizer, self.save_dir + 'mu.pt')
+            torch.save(sigma*self.normalizer, self.save_dir + '_' + str(self.nqueries) + 'sigma.pt')
+            torch.save(mu*self.normalizer, self.save_dir + '_' + str(self.nqueries) + 'mu.pt')
             self.preds = mu + delta
         elif self.acq.upper() == 'GREEDY':
             self.preds = torch.mean(self.y_preds_full_all, axis = 1)
         elif self.acq.upper() == 'EI':
+            #TODO: fix this
             #how to calculate it in this case?
             improvements = self.y_preds_full_all - max(self.norm_y)
             #round to 0 if negative
@@ -209,8 +212,9 @@ class AcquisitionGP(Acquisition):
                 if self.acq.upper() == 'UCB':
                     delta = (self.xi * torch.ones_like(mu)).sqrt() * sigma
                     #save for uncertainty quantification
-                    torch.save(sigma*self.normalizer, self.save_dir + 'sigma.pt')
-                    torch.save(mu*self.normalizer, self.save_dir + 'mu.pt')
+
+                    torch.save(sigma*self.normalizer, self.save_dir + '_' + str(self.nqueries) + 'sigma.pt')
+                    torch.save(mu*self.normalizer, self.save_dir + '_' + str(self.nqueries) + 'mu.pt')
                     self.preds = mu + delta
                 elif self.acq.upper() == 'GREEDY':
                     self.preds = mu.cpu()

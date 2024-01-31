@@ -66,14 +66,15 @@ if __name__ == "__main__":
     encoding = 'onehot' #TrpB_onehot, TrpB_ESM2, GB1_onehot, GB1_ESM2
     df = pd.read_csv('/disk1/jyang4/repos/data/Pgb_fitness.csv')
     n_samples = len(df)
-    target = 'Diff'
-    obj = objectives.Production(df, encoding, target)
+    obj_col = 'Diff'
+    obj = objectives.Production(df, encoding, obj_col)
 
     #obj = objectives.Hartmann_6d()
     obj_fn = obj.objective
     domain = obj.get_domain()
     ymax = obj.get_max()
     disc_X = obj.get_points()[0]
+    disc_y = obj.get_points()[1]
     batch_size = 96
 
     budget = 96 #budget does not include MLDE evaluation at the end with 96 samples, and does not include random samples at the beginning
@@ -84,9 +85,12 @@ if __name__ == "__main__":
         print('Context already set.')
     
     # make dir to hold tensors
-    path = ''
-    subdir = path + 'results/production/test/'
-    #subdir = path + 'results/Hartmann_6d/'
+    path = 'results/production/'
+    subdir = path + 'round1/'
+
+    #save the strings of combos for the search space
+    np.save(path + "combos.npy", np.array(obj.all_combos))
+
     os.makedirs(subdir, exist_ok=True)
     # so have record of all params
     os.system('cp ' + __file__ + ' ' + subdir)
@@ -119,7 +123,7 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(seed)
 
         kernel='RBF'
-        for mtype in ['GP_BOTORCH', 'DKL_BOTORCH', 'DNN_ENSEMBLE', 'BOOSTING_ENSEMBLE']: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
+        for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH',]: #['GP_BOTORCH', 'DKL_BOTORCH', 'CDKL_BOTORCH'] #['GP', 'DKL', 'CDKL']
             for acq_fn in ['GREEDY', 'UCB', 'TS']: #'QEI', 'UCB','TS'
                 dropout=0
 
@@ -145,16 +149,6 @@ if __name__ == "__main__":
                         arc  = [domain[0].size(-1), 500, 150, 50, 1] 
                 elif 'GP' in mtype:
                     arc = [domain[0].size(-1), 1] #use this architecture for GP
-                elif 'CDKL' in mtype:
-                    if 'AA' in encoding:
-                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 1]
-                    elif 'onehot' in encoding:
-                        #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                        arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 1]
-                        #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
-                    elif 'ESM2' in encoding:
-                        arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 1]
                 elif 'DKL' in mtype:
                     if 'onehot' in encoding:
                         arc  = [domain[0].size(-1), 50, 30, 1]
@@ -191,7 +185,7 @@ if __name__ == "__main__":
                     bb_fn=obj_fn,
                     domain=domain,
                     disc_X=disc_X,
-                    obj_max=ymax,
+                    disc_y=disc_y,
                     noise_std=0,
                     n_rand_init=0,
                     budget=budget,

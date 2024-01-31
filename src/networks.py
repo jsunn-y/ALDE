@@ -168,7 +168,7 @@ class DNN_FF(torch.nn.Sequential):
             loss.backward()
             optimizer.step()
             losses[i] = loss.item()
-            print(loss.item())
+            #print(loss.item())
 
             if i > w:
                 recent_min = losses[i-w+1:i+1].min() 
@@ -177,7 +177,7 @@ class DNN_FF(torch.nn.Sequential):
                 #this is a pretty conservative early stopping condition, might want to update
                 if overall_min <= recent_min:
                 #stop if the training loss doesn't improve by more that 0.1 in 30 iterations (aproximately a likelihood improvement of 1.1)
-                # if (overall_min - recent_min)/overall_min < 0.2:
+                # if (overall_min - recent_min)/overall_min < 0.1:
                     print("Early stopping at iteration " + str(i))
                     break
 
@@ -258,7 +258,7 @@ class CNN(torch.nn.Sequential):
             preds = self.forward(X)
             loss = mse(preds, Y)
             loss.backward()
-            print(loss)
+            #print(loss)
             optimizer.step()
 
         self.eval()
@@ -573,7 +573,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                     loss.backward()
                     optimizer.step()
                     losses[i] = loss.item()
-                    print(loss.item())
+                    #print(loss.item())
 
                     if i > w:
                         recent_min = losses[i-w+1:i+1].min() 
@@ -582,7 +582,7 @@ class BoTorchGP(SingleTaskGP, GenericModel):
                         #this is a pretty conservative early stopping condition, might want to update
                         if overall_min <= recent_min:
                         #stop if the training loss doesn't improve by more that 0.1 in 30 iterations (aproximately a likelihood improvement of 1.1)
-                        # if (overall_min - recent_min) < 0.2:
+                        #if (overall_min - recent_min) < 0.1:
                             print("Early stopping at iteration " + str(i))
                             break
             if self.feature_extractor != None:

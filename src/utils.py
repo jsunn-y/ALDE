@@ -186,12 +186,9 @@ def samp_discrete(n: int, objective: Objective, seed: int,
                   rng: np.random.Generator | None = None
                   ) -> tuple[torch.Tensor, torch.Tensor]:
     X, y = objective.get_points()
-    if objective.name == 'Production':
-        inds = np.arange(objective.nsamples)
-    else:
-        if rng is None:
-            rng = np.random.default_rng(seed)
-        inds = np.sort(rng.choice(len(X), size=n))
+    if rng is None:
+        rng = np.random.default_rng(seed)
+    inds = np.sort(rng.choice(len(X), size=n))
     return X[inds], y[inds], torch.tensor(inds)
 
 ##### for normalizing data points

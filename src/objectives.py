@@ -131,10 +131,10 @@ class Combo(Objective):
 class Production(Objective):
     name = 'Production'
 
-    def __init__(self, df, encoding, target):
+    def __init__(self, df, encoding, obj_col):
         train_combos = df['Combo'].tolist()
         self.nsamples = len(train_combos)
-        self.ytrain = df[target].values
+        self.ytrain = df[obj_col].values
         self.Xtrain = generate_onehot(train_combos)
         self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
 
@@ -146,8 +146,6 @@ class Production(Objective):
         #print(self.train_indices)
 
         #self.test_combos = [combo for combo in self.all_combos if combo not in train_combos]
-
-        np.save("combos.npy", np.array(self.all_combos))
 
         #for proposal step
         self.X = torch.reshape(generate_onehot(self.all_combos), (len(self.all_combos), -1))

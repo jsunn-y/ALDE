@@ -30,7 +30,7 @@ class BO_ARGS(MapClass):
     bb_fn: utils.ObjectiveFunc = None
     domain: tuple[Tensor, Tensor] = None
     disc_X: Tensor = None
-    obj_max: Tensor | float = None
+    disc_y: Tensor = None
     noise_std: utils.Noise = 0 # generally set 0 unless want to inject noise
     n_rand_init: int = 0 # if you want it to auto query more pts
     batch_size: int = 1 # for batched BO
@@ -70,7 +70,7 @@ class BayesianOptimization:
                  bb_fn: utils.ObjectiveFunc,
                  domain: tuple[Tensor, Tensor],
                  disc_X: Tensor | None = None,
-                 obj_max=None,
+                 disc_y = Tensor,
                  acq_fn: Literal['EI', 'UCB', 'TS'] | None = None,
                  architecture: Sequence[int] | None = None,
                  activation: str | None = None,
@@ -125,7 +125,8 @@ class BayesianOptimization:
         if disc_X is not None:
             self.disc_X = botorch.utils.transforms.normalize(disc_X, self.domain)
             #self.disc_X = disc_X
-        self.obj_max = obj_max
+        self.disc_y = disc_y
+        self.obj_max = torch.max(disc_y).double()
         self.verbose = verbose
         self.acq_fn = acq_fn
         self.run_mlde = run_mlde
@@ -260,7 +261,7 @@ class BayesianOptimization:
 
             self.model_kwargs = {
             'tree_method': tree_method,
-            #"objective": "reg:tweedie",
+            "objective": "reg:tweedie",
             "early_stopping_rounds": 10,
             "nthread": -1
             }
@@ -396,9 +397,13 @@ class BayesianOptimization:
     def update_trajectory(self, x, acq_val, idx):
         with torch.no_grad():
             x_ind = torch.reshape(x[0], (1, -1))
-            y = self.bb_fn(botorch.utils.transforms.unnormalize(x_ind, self.domain), noise=self.noise())
-            #y = self.bb_fn(x_ind, noise=self.noise())
-            if len(y) == 2: y = y[-1]
+
+            # #TODO: replace this, finding the closest point is the slow step because calculating distance scales with encoding size and square of design space
+            # y = self.bb_fn(botorch.utils.transforms.unnormalize(x_ind, self.domain), noise=self.noise())
+            # #y = self.bb_fn(x_ind, noise=self.noise())
+            # if len(y) == 2: y = y[-1]
+            y = self.disc_y[idx]
+
             y = torch.reshape(y, (1, 1))[0]
             idx = torch.reshape(idx, (1, 1))[0]
         

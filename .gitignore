@@ -1,11 +1,9 @@
 # adtl
-sandbox/
 results/
+figs/
+old_runs/
+archived/
 *.out
-run2.py
-run3.py
-run4.py
-run5.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
