@@ -116,22 +116,20 @@ if __name__ == "__main__":
             print('Random search done.')
 
 
-            kernel='RBF' #kernel 
+            kernel='RBF' #kernel must be radial basis function, only applies to GP_BOTORCH and DKL_BOTORCH
             for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH']:
                 for acq_fn in ['GREEDY', 'UCB', 'TS']:
-                    dropout=0
+                    
+                    dropout=0 #dropout rate, only applies to neural networks models (DNN_ENSEMBLE and DKL_BOTORCH)
 
                     if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
                         lr = 1e-1
                     else:
                         lr = 1e-3
-                    # if mtype == 'DKL' and acq_fn == 'TS' and "onehot" not in encoding:
-                    #     num_simult_jobs = 4 #current bottleneck is the maximum number of jobs that can fit on gpu memory
-                    # else:
-                    #     num_simult_jobs = 10
-                    num_simult_jobs = 1
+                    
+                    num_simult_jobs = 1 #number of simulations to run in parallel
 
-                    #last layer of architecture should be repeated, this gets fed to the GP
+                    #set the architecture of the neural network
                     if 'DNN' in mtype and 'ENSEMBLE' in mtype:
                         if 'onehot' in encoding:
                             arc  = [domain[0].size(-1), 30, 30, 1]
@@ -142,17 +140,7 @@ if __name__ == "__main__":
                         elif 'ESM2' in encoding:
                             arc  = [domain[0].size(-1), 500, 150, 50, 1] 
                     elif 'GP' in mtype:
-                        arc = [domain[0].size(-1), 1] #use this architecture for GP
-                    elif 'CDKL' in mtype:
-                        if 'AA' in encoding:
-                            #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                            arc  = [int(domain[0].size(-1)/4), 4, 16, 16, 16, 16, 16, 1]
-                        elif 'onehot' in encoding:
-                            #arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 64, 64]
-                            arc  = [int(domain[0].size(-1)/20), 20, 32, 32, 32, 32, 32, 1]
-                            #arc  = [int(domain[0].size(-1)/20), 20, 16, 16, 16, 16, 16, 16]
-                        elif 'ESM2' in encoding:
-                            arc  = [int(domain[0].size(-1)/1280), 1280, 80, 40, 40, 32, 32, 1]
+                        arc = [domain[0].size(-1), 1]
                     elif 'DKL' in mtype:
                         if 'onehot' in encoding:
                             arc  = [domain[0].size(-1), 30, 30, 1]
@@ -161,32 +149,25 @@ if __name__ == "__main__":
                         elif 'georgiev' in encoding:
                             arc  = [domain[0].size(-1), 30, 30, 1]
                         else:
-                            arc  = [domain[0].size(-1), 500, 150, 50, 1] #becomes DKL automatically if more than two layers
-                        # if 'ESM2' in encoding:
-                        #     arc  = [int(domain[0].size(-1)/1280), 20, 16, 16, 16, 32, 32]
-                    else:
-                        arc = [domain[0].size(-1), 1] #filler architecture for MLDE
+                            arc  = [domain[0].size(-1), 500, 150, 50, 1]
 
-                    #fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '_' + str(r + 1) + str(arc[1:-1]) + '_' + str(r + 1)
-                    if 'MLDE' in mtype:
-                        fname = mtype + '-' + acq_fn +  '_' + str(r + 1)
-                    else:
-                        fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
+                    #filename
+                    fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
+
                     args = BO_ARGS(
-                        # primary args
                         mtype=mtype,
                         kernel=kernel,
                         acq_fn=acq_fn,
-                        # secondary args
-                        xi=4,
+                        xi=4, #xi term, only applies to UCB
                         architecture=arc,
                         activation='lrelu',
                         min_noise=1e-6,
-                        trainlr=lr, #originally 1e-2 in james, have also tried 1e-3
+                        trainlr=lr,
                         train_iter=300,
                         dropout=dropout,
                         mcdropout=0,
                         verbose=2,
+
                         # usually don't change
                         bb_fn=obj_fn,
                         domain=domain,
