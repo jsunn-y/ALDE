@@ -32,19 +32,21 @@ Within the script, `encoding` must be specified as the project and the type of e
 
 The `path` variable should be updated to where the results will be saved.
 
-## Results Files
-The general format for file prefix is: `{model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}`. Different encodings and datasets will be organized in separate folders. Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
-| File Suffix | Description | 
-|:-----------|:----------------:|
-| `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `_fitness.csv` file for simulation runs, or by the `all_combos.csv` file for production runs|
-| `_{n}mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. |
-| `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. |
-
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
 ```
 python execute_simulation.py
 ```
+ALDE will be simulated for 2 combinatorially complete datasets, 4 encodings, 3 models, and 3 acquisition functions, as outlined in our study.
+
+## Results Files
+The general format for file prefix is: `{model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}`. Different encodings and datasets will be organized in separate folders. Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
+
+| File Suffix | Description | 
+|:-----------|:----------------:|
+| `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `_fitness.csv` file for simulation runs, or by the `all_combos.csv` file for production runs|
+| `_{n}mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. Used during anlysis of uncertainty quantification, for simulation runs. |
+| `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. Used during anlysis of uncertainty quantification, for simulation runs.|
 
 ## Tuning the execution script
 We reccomend running the scripts with default parameters to reproduce to results from our study. However, the following variables can be tuned in the execution script.
