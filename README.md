@@ -25,7 +25,7 @@ For every round of training and prediction, ALDE can be executed using the follo
 ```
 python execute_production.py
 ```
-Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'.
+Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'. Output will be a `.npy` file containing the order of the combos in the design space (domain) as strings.
 
 The `path` variable should be updated to where the results will be saved.
 
@@ -33,7 +33,11 @@ The `path` variable should be updated to where the results will be saved.
 Each active learning campaign will produce the following results files as torch tensors:
 | File Suffix | Description | 
 |:-----------|:----------------:|
-| `_indices.pt` | The indices for the queried protein sequences, which can be referenced by  |
+| `_indices.pt` | The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
+| `_y.pt` | Fitness values for the queried sequences |
+| `_regret.pt` | Running regret, or distance from the maximum fitness in the design space |
+| `mu.pt` | Posterior mean values from the model, for all samples in the design space. |
+| `sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. |
 
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes:
