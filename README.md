@@ -33,7 +33,7 @@ Within the script, `encoding` must be specified as the project and the type of e
 The `path` variable should be updated to where the results will be saved.
 
 ## Results Files
-The general format for file prefix is: {model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
+The general format for file prefix is: `{model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}`. Different encodings and datasets will be organized in separate folders. Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
 | File Suffix | Description | 
 |:-----------|:----------------:|
 | `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
