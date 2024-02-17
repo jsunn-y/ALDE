@@ -16,11 +16,12 @@ conda activate ALDE
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin wet-lab ALDE campaign demonstrated in our study.
 
-First generate the design space for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Then run the script:
+First generate the design space for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Scripts for the protoglobin wet-lab campaign in our study are given as an example. Then run the script:
 ```
 python generate_domain.py
 ```
-Outputs from `generate_domain.py` include:
+Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `combos.npy`, which is a list of strings describing the combos of the residues under study and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos.
+
 For a given active learning campaign, generating the domain only needs to be executed once.
 
 For every round of training and prediction, ALDE can be executed using the following command:
