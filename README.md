@@ -33,14 +33,14 @@ Within the script, `encoding` must be specified as the project and the type of e
 The `path` variable should be updated to where the results will be saved.
 
 ## Results Files
-Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
+The general format for file prefix is: {model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
 | File Suffix | Description | 
 |:-----------|:----------------:|
-| `_indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
-| `_y.pt` | Fitness values for the queried sequences |
-| `_regret.pt` | Running regret, or distance from the maximum fitness in the design space |
-| `mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
-| `sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted for each model in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
+| `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
+| `y.pt` | Fitness values for the queried sequences |
+| `regret.pt` | Running regret, or distance from the maximum fitness in the design space |
+| `_{n}mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. |
+| `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted for each model in the campaign, where n indicates the number of queried samples used to train the model. |
 
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
