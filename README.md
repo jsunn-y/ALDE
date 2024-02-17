@@ -20,7 +20,7 @@ First generate the design space for the combinatorial library by specifying `nsi
 ```
 python generate_domain.py
 ```
-Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `combos.npy`, which is a list of strings describing the combos of the residues under study and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos.
+Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `combos.npy`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos.
 
 For a given active learning campaign, generating the domain only needs to be executed once.
 
@@ -28,7 +28,7 @@ For every round of training and prediction, ALDE can be executed using the follo
 ```
 python execute_production.py
 ```
-Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'. Output will be a `.npy` file containing the order of the combos in the design space (domain) as strings.
+Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'.
 
 The `path` variable should be updated to where the results will be saved.
 
