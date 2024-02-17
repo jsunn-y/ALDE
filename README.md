@@ -20,7 +20,7 @@ First generate the design space for the combinatorial library by specifying `nsi
 ```
 python generate_domain.py
 ```
-Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `combos.npy`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos.
+Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `all_combos.csv`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos.
 
 For a given active learning campaign, generating the domain only needs to be executed once.
 
@@ -36,11 +36,9 @@ The `path` variable should be updated to where the results will be saved.
 The general format for file prefix is: `{model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}`. Different encodings and datasets will be organized in separate folders. Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
 | File Suffix | Description | 
 |:-----------|:----------------:|
-| `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
-| `y.pt` | Fitness values for the queried sequences |
-| `regret.pt` | Running regret, or distance from the maximum fitness in the design space |
+| `indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `_fitness.csv` file for simulation runs, or by the `all_combos.csv` file for production runs|
 | `_{n}mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. |
-| `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted for each model in the campaign, where n indicates the number of queried samples used to train the model. |
+| `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. |
 
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
