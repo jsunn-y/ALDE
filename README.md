@@ -74,4 +74,4 @@ We reccomend running the scripts with default parameters to reproduce to results
 | verbose | 2 | how much to report to the terminal  |
 
 ## Analysis
-Examples for visualization of the results can be found in 
+Examples the raw outputs from the ALDE simulations can organized into a dataframe using `analysis/tabulate_results.ipynb`. Afterware, visualization of the results can be performed with `analysis/visualization.ipynb`.
