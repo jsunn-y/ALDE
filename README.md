@@ -14,6 +14,8 @@ conda activate ALDE
 ```
 
 ## Production Runs
+Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin wet-lab ALDE campaign demonstrated in our study.
+
 First generate the design space for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Then run the script:
 ```
 python generate_domain.py
@@ -30,17 +32,17 @@ Within the script, `encoding` must be specified as the project and the type of e
 The `path` variable should be updated to where the results will be saved.
 
 ## Results Files
-Each active learning campaign will produce the following results files as torch tensors:
+Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
 | File Suffix | Description | 
 |:-----------|:----------------:|
-| `_indices.pt` | The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
+| `_indices.pt` | One output for the campaign. The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
 | `_y.pt` | Fitness values for the queried sequences |
 | `_regret.pt` | Running regret, or distance from the maximum fitness in the design space |
-| `mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted for each model in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
+| `mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
 | `sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted for each model in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
 
 ## Simulation Runs
-To reproduce the computational simulations on complete landscapes:
+To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
 ```
 python execute_simulation.py
 ```
@@ -69,3 +71,6 @@ We reccomend running the scripts with default parameters to reproduce to results
 | mcdrouput | 0 | test time dropout rate, not currently supported  |
 | train_iter | 300 | number of iterations for training, which affects the training of all models except 'BOOSTING_ENSEMBLE'  |
 | verbose | 2 | how much to report to the terminal  |
+
+## Analysis
+Examples for visualization of the results can be found in 
