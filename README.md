@@ -36,8 +36,8 @@ Each active learning campaign will produce the following results files as torch 
 | `_indices.pt` | The indices for the queried protein sequences, which can be referenced by the order given in the fitness `.csv` file for simulation runs, or by the `.npy` file for production runs|
 | `_y.pt` | Fitness values for the queried sequences |
 | `_regret.pt` | Running regret, or distance from the maximum fitness in the design space |
-| `mu.pt` | Posterior mean values from the model, for all samples in the design space. |
-| `sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. |
+| `mu.pt` | Posterior mean values from the model, for all samples in the design space. Outputted for each model in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
+| `sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted for each model in the campaign, where the number before mu indicates the number of queried samples used to train the model. |
 
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes:
