@@ -9,11 +9,11 @@ git clone https://github.com/jsunn-y/ALDE.git
 To run ALDE, the relevant anaconda environment can be installed from `alde.yml`. To build this environment, run
 ```
 cd ./ALDE
-mkdir data
 mkdir results
 conda env create -f alde.yml
 conda activate ALDE
 ```
+Large encodings can be downloaded from here, and should be unzipped into the data folder.
 
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin (ParPgb) wet-lab ALDE campaign demonstrated in our study.
