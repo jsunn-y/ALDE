@@ -19,12 +19,17 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     
-    encoding = 'ParPgb_onehot'
-    df = pd.read_csv('data/Pgb_fitness.csv') #path to a csv file with sequence data and associated fitness values
-    n_samples = len(df)
+    protein = 'ParPgb' #name of the project
+    encoding = 'onehot' #name of the project and the encoding to use
+    df = pd.read_csv('data/' + protein + '/fitness.csv') #path to a csv file with sequence data and associated fitness values
     obj_col = 'Diff' #name of the fitness column to optimize
-    obj = objectives.Production(df, encoding, obj_col)
+    obj = objectives.Production(df, protein, encoding, obj_col)
 
+    # make dir to hold tensors
+    path = 'results/ParPgb_production/'
+    subdir = path + 'round1/'
+
+    n_samples = len(df)
     obj_fn = obj.objective
     domain = obj.get_domain()
     ymax = obj.get_max()
@@ -39,10 +44,6 @@ if __name__ == "__main__":
         mp.set_start_method('spawn')
     except:
         print('Context already set.')
-    
-    # make dir to hold tensors
-    path = 'results/production/'
-    subdir = path + 'test/'
 
     os.makedirs(subdir, exist_ok=True)
     os.system('cp ' + __file__ + ' ' + subdir)

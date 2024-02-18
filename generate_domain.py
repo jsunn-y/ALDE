@@ -1,9 +1,10 @@
 import numpy as np
+import pandas as pd
 import torch
 from src.encoding_utils import generate_onehot, generate_all_combos
 
 """
-Script to generate a domain for the combinatorial library. Only needs to be run once before an active learning campaign
+Script to generate a domain for the combinatorial library, for a production (wet-lab) run. Only needs to be run once before an ALDE campaign.
 """
 #set the number of residues in the combinatorial library and the name for the campaign
 nsites = 5
@@ -14,7 +15,8 @@ path = 'data/' + name + '/'
 
 #generate strings for all combos in the design space
 all_combos = generate_all_combos(nsites)
-np.save(path + "combos.npy", np.array(all_combos))
+df = pd.DataFrame(all_combos, columns=['Combo'])
+df.to_csv(path + 'all_combos.csv', index=False)
 
 #generate onehot encoding for all combos
 X = torch.reshape(generate_onehot(all_combos), (len(all_combos), -1))

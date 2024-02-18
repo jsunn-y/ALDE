@@ -4,7 +4,7 @@ figs/
 old_runs/
 archived/
 data/
-*.out
+production_utils/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

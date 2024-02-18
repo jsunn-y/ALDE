@@ -11,7 +11,6 @@ from src.utils import Noise
 from src.encoding_utils import generate_onehot, generate_all_combos
 
 class Objective:
-    name: str
 
     @staticmethod
     def objective(x: Tensor, noise: Noise = 0.
@@ -49,19 +48,16 @@ class Objective:
         raise NotImplementedError
 
 class Combo(Objective):
-    name = 'combinatorial_library'
+    """
+    Class for active learning simulations on combinatory libraries.
+    """
 
-    def __init__(self, encoding):
-        if 'GB1' in encoding:
-            fitness_df = pd.read_csv('/disk1/jyang4/repos/data/GB1_fitness.csv')
-            self.y = torch.tensor(fitness_df['fit'].values).double()
-            self.y = self.y/self.y.max()
-        elif 'TrpB' in encoding:
-            fitness_df = pd.read_csv('/disk1/jyang4/repos/data/TrpB_fitness.csv')
-            self.y = torch.tensor(fitness_df['fitness'].values).double()
-            self.y = self.y/self.y.max()
+    def __init__(self, protein, encoding):
+        fitness_df = pd.read_csv('data/' + protein + '/fitness.csv')
+        self.y = torch.tensor(fitness_df['fitness'].values).double()
+        self.y = self.y/self.y.max()
             
-        self.X = torch.load('/disk1/jyang4/repos/data/' + encoding + '_x.pt')
+        self.X = torch.load('data/' + protein + '/' + encoding + '_x.pt')
         
     def objective(self, x: Tensor, noise: Noise = 0.) -> tuple[Tensor, Tensor]:
         qx, qy = utils.query_discrete(self.X, self.y, x)
@@ -82,19 +78,21 @@ class Combo(Objective):
         return Combo.get_points()
 
 class Production(Objective):
-    name = 'Production'
+    """
+    Class for proposing new sequences to screen in a production campaign, on a combinatorial design space.
+    """
 
-    def __init__(self, df, encoding, obj_col):
+    def __init__(self, df, protein, encoding, obj_col):
         train_combos = df['Combo'].tolist()
         self.nsamples = len(train_combos)
         self.ytrain = df[obj_col].values
         self.Xtrain = generate_onehot(train_combos)
         self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
 
-        name = encoding.split('_')[0]
+        name = protein
         
-        assert 'onehot' in encoding #currently only works for onehot encodings, but can be extended to other encodings
-        self.all_combos = list(np.load('data/' + name + '/combos.npy'))
+        assert encoding == 'onehot' #currently only works for onehot encodings, but can be extended to other encodings
+        self.all_combos = list(pd.read_csv('data/' + name + '/all_combos.csv')['Combo'].values)
         self.train_indices = [self.all_combos.index(combo) for combo in train_combos]
 
         self.X = torch.load('data/' + name + '/onehot_x.pt')
@@ -126,7 +124,3 @@ class Production(Objective):
         return Production.get_points()
     
 ALL_OBJS = [Combo, Production]
-
-NAME_TO_OBJ = {
-    obj.name: obj for obj in ALL_OBJS
-}

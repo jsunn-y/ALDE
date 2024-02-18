@@ -187,11 +187,11 @@ class BayesianOptimization:
             Save informatino about the queries, including the regret, y values, and indices.
             """
             print('Saving: {}'.format(self.savedir))
-            if self.obj_max is not None:
-                torch.save(self.regret.cpu(), self.savedir + 'regret.pt')
-                if self.verbose >= 1: print('Regret saved.')
-            torch.save(self.queries_y.cpu(), self.savedir + 'y.pt')
-            if self.verbose >= 1: print('Y values saved.')
+            # if self.obj_max is not None:
+            #     torch.save(self.regret.cpu(), self.savedir + 'regret.pt')
+            #     if self.verbose >= 1: print('Regret saved.')
+            # torch.save(self.queries_y.cpu(), self.savedir + 'y.pt')
+            # if self.verbose >= 1: print('Y values saved.')
             torch.save(self.indices.cpu(), self.savedir + 'indices.pt')
             if self.verbose >= 1: print('Indices saved.')
             
@@ -219,6 +219,7 @@ class BayesianOptimization:
             else:
                 tree_method = 'hist'
 
+            #use tweedie if all labels are positive
             if min(self.queries_y) >= 0:
                 self.model_kwargs = {
                 'tree_method': tree_method,
