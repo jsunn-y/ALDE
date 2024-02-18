@@ -9,6 +9,8 @@ git clone https://github.com/jsunn-y/ALDE.git
 To run ALDE, the relevant anaconda environment can be installed from `alde.yml`. To build this environment, run
 ```
 cd ./ALDE
+mkdir data
+mkdir results
 conda env create -f alde.yml
 conda activate ALDE
 ```
