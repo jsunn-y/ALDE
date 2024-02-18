@@ -28,7 +28,7 @@ For every round of training and prediction, ALDE can be executed using the follo
 ```
 python execute_production.py
 ```
-Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'.
+Within the script, `encoding` must be specified as the project and the type of encoding (currently only support onehot). `df` should be loaded as a dataframe from a csv containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the squence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions.
 
 The `path` variable should be updated to where the results will be saved.
 
