@@ -45,7 +45,7 @@ The general format for results file prefix is: `{model name}-DO-{dropout rate}-{
 | `_{n}sigma.pt` | Posterior standard deviation values from the model, for all samples in the design space. Outputted each time a model has been trained in the campaign, where n indicates the number of queried samples used to train the model. Used during anlysis of uncertainty quantification. For the production runs, only the samples from the training set are valid. |
 
 ## Tuning the execution script
-We reccomend running the scripts with default parameters to reproduce to results from our study. However, the following variables can be tuned in the execution script.
+We recommend running the scripts with default parameters to reproduce to results from our study. However, the following variables can be tuned in the execution script.
 
 | Variable| Default Value | Description | 
 |:-----------|:-------:|:----------------:|
@@ -71,4 +71,4 @@ We reccomend running the scripts with default parameters to reproduce to results
 | verbose | 2 | how much to report to the terminal  |
 
 ## Analysis
-The raw outputs from the ALDE simulations can be summarized into a dataframe using `analysis/tabulate_results.ipynb`. Afterware, visualization of the results can be performed with `analysis/visualization.ipynb`.
+The raw outputs from the ALDE simulations can be summarized into a dataframe using `analysis/tabulate_results.ipynb`. Afterward, example visualizations of the results can be performed with `analysis/visualization.ipynb`.
