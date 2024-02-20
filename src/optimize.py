@@ -276,7 +276,7 @@ class BayesianOptimization:
                 max, simp_reg = self.update_trajectory(x, acq_val, idx)
 
             # track progress at intervals
-            if self.savedir is not None and self.cost%(24) == 0:
+            if self.savedir is not None and self.cost%(96) == 0:
                 save_tensors()
 
         if self.savedir is not None:

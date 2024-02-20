@@ -33,7 +33,7 @@ if __name__ == "__main__":
             disc_y = obj.get_points()[1]
             batch_size = 96 #number of samples to query in each round of active learning
 
-            n_pseudorand_init = 96 #number of initial random samples
+            n_pseudorand_init = 384 #number of initial random samples
             budget = 96*5 - n_pseudorand_init #total number of samples to query, not including random initializations
 
             try:
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                 print('Context already set.')
             
             # make dir to hold tensors
-            path = 'results/5x96_simulations/' 
+            path = 'results/384+96_baseline/' 
             subdir = path + protein + '/' + encoding + '/'
             os.makedirs(subdir, exist_ok=True)
             os.system('cp ' + __file__ + ' ' + subdir) #save the script that generated the results
@@ -90,8 +90,6 @@ if __name__ == "__main__":
                 # tc = torch.reshape(tc, (1, -1))
                 # torch.save(tc, subdir + 'Random_' + str(r + 1) + 'regret.pt')
                 # torch.save(randy, subdir + 'Random_' + str(r + 1) + 'y.pt')
-
-
                 torch.save(rand_indices, subdir + 'Random_' + str(r + 1) + 'indices.pt')
                 print('Random search done.')
 
@@ -154,7 +152,7 @@ if __name__ == "__main__":
                             disc_X=disc_X,
                             disc_y=disc_y,
                             noise_std=0,
-                            n_rand_init=0, #additional random inits
+                            n_rand_init=0,
                             budget=budget,
                             query_cost=1,
                             queries_x=start_x,

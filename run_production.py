@@ -19,11 +19,11 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     
-    protein = 'ParPgb' #name of the project
+    name = 'ParPgb' #name of the project
     encoding = 'onehot' #name of the project and the encoding to use
-    df = pd.read_csv('data/' + protein + '/fitness.csv') #path to a csv file with sequence data and associated fitness values
+    df = pd.read_csv('data/' + name + '/fitness.csv') #path to a csv file with sequence data and associated fitness values
     obj_col = 'Diff' #name of the fitness column to optimize
-    obj = objectives.Production(df, protein, encoding, obj_col)
+    obj = objectives.Production(df, name, encoding, obj_col)
 
     # make dir to hold tensors
     path = 'results/ParPgb_production/'
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     disc_y = obj.get_points()[1]
     
     #number of proposals to screen in the next round
-    batch_size = 96
+    batch_size = 90 #for a 96-well plate, with 6 control wells
     budget = batch_size
 
     try:

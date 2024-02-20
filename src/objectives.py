@@ -82,14 +82,12 @@ class Production(Objective):
     Class for proposing new sequences to screen in a production campaign, on a combinatorial design space.
     """
 
-    def __init__(self, df, protein, encoding, obj_col):
+    def __init__(self, df, name, encoding, obj_col):
         train_combos = df['Combo'].tolist()
         self.nsamples = len(train_combos)
         self.ytrain = df[obj_col].values
         self.Xtrain = generate_onehot(train_combos)
         self.Xtrain = torch.reshape(self.Xtrain, (self.Xtrain.shape[0], -1))
-
-        name = protein
         
         assert encoding == 'onehot' #currently only works for onehot encodings, but can be extended to other encodings
         self.all_combos = list(pd.read_csv('data/' + name + '/all_combos.csv')['Combo'].values)
