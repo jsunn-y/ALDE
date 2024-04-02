@@ -29,7 +29,7 @@ For every round of training and prediction, ALDE can be executed using the follo
 python execute_production.py --name=ParPgb \
 --data_csv=fitness_round1.csv \
 --obj_col=Diff \
---results/ParPgb_production/round1 \
+--output_path=results/ParPgb_production/round1 \
 --batch_size=90 \
 --seed_index=0
 ```
