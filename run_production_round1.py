@@ -1,4 +1,5 @@
 from __future__ import annotations
+import argparse
 import numpy as np
 import pandas as pd
 import torch
@@ -15,19 +16,40 @@ Script for predicting a batch of sequences to use in the next round of active le
 '''
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--name", type=str, default="ParPgb")
+    parser.add_argument("--encoding", type=str, default="onehot")
+    parser.add_argument("--data_csv", type=str, default="fitness_round1.csv")
+    parser.add_argument("--obj_col", type=str, default="Diff")
+    parser.add_argument("--output_path", type=str, default="results/ParPgb_production/round1")
+    parser.add_argument("--batch_size", type=int, default=90)
+    parser.add_argument("--runs", type=int, default=1)
+    parser.add_argument("--seed_index", type=int, default=0)
+    parser.add_argument("--kernel", type=int, default="RBF", cjhoices=["RBF"])
+    parser.add_argument("--mtypes", type=list, default=["BOOSTING_ENSEMBLE", "GP_BOTORCH", "DNN_ENSEMBLE", "DKL_BOTORCH"])
+    parser.add_argument("--aqn_fns", type=list, default=['GREEDY', 'UCB', 'TS'])
+    parser.add_argument("--xi", type=float, default=4, help="trade-off parameter for the UCB acquisition function")
+    parser.add_argument("--activation", type=str, default="lrelu")
+    parser.add_argument("--min_noise", type=float, default=1e-6)
+    parser.add_argument("--train_iter", type=int, default=300)
+    parser.add_argument("--dropout", type=float, default=0)
+    parser.add_argument("--verbose", type=int, default=2)
+
+    args = parser.parse_args()
+
     warnings.filterwarnings("ignore")
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = args.device
     print(device)
     
-    name = 'ParPgb' #name of the project
-    encoding = 'onehot' #name of the project and the encoding to use
-    df = pd.read_csv('data/' + name + '/fitness.csv') #path to a csv file with sequence data and associated fitness values
-    obj_col = 'Diff' #name of the fitness column to optimize
+    name = args.name #name of the project
+    encoding = args.encoding #name of the project and the encoding to use
+    df = pd.read_csv('data/' + name + '/' + args.data_csv) #path to a csv file with sequence data and associated fitness values
+    obj_col = args.obj_col #name of the fitness column to optimize
     obj = objectives.Production(df, name, encoding, obj_col)
 
     # make dir to hold tensors
-    path = 'results/ParPgb_production/'
-    subdir = path + 'round1/'
+    path = args.output_path
 
     n_samples = len(df)
     obj_fn = obj.objective
@@ -37,7 +59,7 @@ if __name__ == "__main__":
     disc_y = obj.get_points()[1]
     
     #number of proposals to screen in the next round
-    batch_size = 90 #for a 96-well plate, with 6 control wells
+    batch_size = args.batch_size #for a 96-well plate, with 6 control wells
     budget = batch_size
 
     try:
@@ -49,8 +71,8 @@ if __name__ == "__main__":
     os.system('cp ' + __file__ + ' ' + subdir)
     print('Script stored.')
 
-    runs = 1 #only perform one prediction
-    index = 0 #for reproducibility
+    runs = args.runs #only perform one prediction
+    index = args.seed_index #for reproducibility
     seeds = []
 
     with open('src/rndseed.txt', 'r') as f:
@@ -73,10 +95,10 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-        kernel='RBF'
-        for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH',]: 
-            for acq_fn in ['GREEDY', 'UCB', 'TS']: 
-                dropout=0
+        kernel=args.kernel
+        for mtype in args.mytpes: 
+            for acq_fn in args.acq_fns: 
+                dropout=args.dropout
 
                 if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
                     lr = 1e-1
@@ -114,12 +136,12 @@ if __name__ == "__main__":
                     mtype=mtype,
                     kernel=kernel,
                     acq_fn=acq_fn,
-                    xi=4,
+                    xi=args.xi,
                     architecture=arc,
-                    activation='lrelu',
-                    min_noise=1e-6,
+                    activation=args.activation,
+                    min_noise=args.min_noise,
                     trainlr=lr,
-                    train_iter=300,
+                    train_iter=args.train_iter,
                     dropout=dropout,
                     mcdropout=0,
                     verbose=2,
