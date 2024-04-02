@@ -1,4 +1,5 @@
 from __future__ import annotations
+import argparse
 import numpy as np
 import pandas as pd
 import torch
@@ -16,12 +17,32 @@ separate processes.
 '''
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--names", type=list, default=["GB1", "TrpB"])
+    parser.add_argument("--encodings", type=list, default=["AA", "georgiev", "onehot", "ESM2"])
+    parser.add_argument("--batch_size", type=int, default=96)
+    parser.add_argument("--n_pseudorand_init", type=int, default=96)
+    parser.add_argument("--budget", type=int, default=384)
+    parser.add_argument("--output_path", type=str, default='results/5x96_simulations/')
+    parser.add_argument("--runs", type=int, default=70)
+    parser.add_argument("--seed_index", type=int, default=0)
+    parser.add_argument("--kernel", type=str, default="RBF", cjhoices=["RBF"])
+    parser.add_argument("--xi", type=float, default=4, help="trade-off parameter for the UCB acquisition function")
+    parser.add_argument("--activation", type=str, default="lrelu")
+    parser.add_argument("--min_noise", type=float, default=1e-6)
+    parser.add_argument("--train_iter", type=int, default=300)
+    parser.add_argument("--dropout", type=float, default=0)
+    parser.add_argument("--verbose", type=int, default=2)
+
+    args = parser.parse_args()
+
     warnings.filterwarnings("ignore")
 
     #8 different objectives (2 datasets, each with 4 encodings)
-    for protein in ['GB1', 'TrpB']:
-        for encoding in ['AA', 'georgiev', 'onehot', 'ESM2']:
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    for protein in args.names:
+        for encoding in args.encodings:
+            device = args.device
             print(device)
 
             obj = objectives.Combo(protein, encoding)
@@ -31,10 +52,10 @@ if __name__ == "__main__":
             ymax = obj.get_max()
             disc_X = obj.get_points()[0]
             disc_y = obj.get_points()[1]
-            batch_size = 96 #number of samples to query in each round of active learning
+            batch_size = args.batch_size #number of samples to query in each round of active learning
 
-            n_pseudorand_init = 384 #number of initial random samples
-            budget = 96*5 - n_pseudorand_init #total number of samples to query, not including random initializations
+            n_pseudorand_init = args.n_pseudorand_init #number of initial random samples
+            budget = args.budget #total number of samples to query, not including random initializations
 
             try:
                 mp.set_start_method('spawn')
@@ -42,14 +63,14 @@ if __name__ == "__main__":
                 print('Context already set.')
             
             # make dir to hold tensors
-            path = 'results/384+96_baseline/' 
+            path = args.output_path
             subdir = path + protein + '/' + encoding + '/'
             os.makedirs(subdir, exist_ok=True)
             os.system('cp ' + __file__ + ' ' + subdir) #save the script that generated the results
             print('Script stored.')
 
-            runs = 70 #number of times to repeat the simulation
-            index = 0 #index of the first run (reads from rndseed.txt to choose the seed)
+            runs = args.runs #number of times to repeat the simulation
+            index = args.seed_index #index of the first run (reads from rndseed.txt to choose the seed)
             seeds = []
 
             with open('src/rndseed.txt', 'r') as f:
@@ -90,15 +111,17 @@ if __name__ == "__main__":
                 # tc = torch.reshape(tc, (1, -1))
                 # torch.save(tc, subdir + 'Random_' + str(r + 1) + 'regret.pt')
                 # torch.save(randy, subdir + 'Random_' + str(r + 1) + 'y.pt')
+
+
                 torch.save(rand_indices, subdir + 'Random_' + str(r + 1) + 'indices.pt')
                 print('Random search done.')
 
 
-                kernel='RBF' #kernel must be radial basis function, only applies to GP_BOTORCH and DKL_BOTORCH
-                for mtype in ['BOOSTING_ENSEMBLE', 'GP_BOTORCH', 'DNN_ENSEMBLE', 'DKL_BOTORCH']:
+                kernel=args.kernel #kernel must be radial basis function, only applies to GP_BOTORCH and DKL_BOTORCH
+                for mtype in ["BOOSTING_ENSEMBLE", "GP_BOTORCH", "DNN_ENSEMBLE", "DKL_BOTORCH"]:
                     for acq_fn in ['GREEDY', 'UCB', 'TS']:
                         
-                        dropout=0 #dropout rate, only applies to neural networks models (DNN_ENSEMBLE and DKL_BOTORCH)
+                        dropout=args.dropout #dropout rate, only applies to neural networks models (DNN_ENSEMBLE and DKL_BOTORCH)
 
                         if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
                             lr = 1e-1
@@ -138,21 +161,21 @@ if __name__ == "__main__":
                             mtype=mtype,
                             kernel=kernel,
                             acq_fn=acq_fn,
-                            xi=4, #xi term, only applies to UCB
+                            xi=args.xi, #xi term, only applies to UCB
                             architecture=arc,
-                            activation='lrelu',
-                            min_noise=1e-6,
+                            activation=args.activation,
+                            min_noise=args.min_noise,
                             trainlr=lr,
-                            train_iter=300,
+                            train_iter=args.train_iter,
                             dropout=dropout,
                             mcdropout=0,
-                            verbose=2,
+                            verbose=args.verbose,
                             bb_fn=obj_fn,
                             domain=domain,
                             disc_X=disc_X,
                             disc_y=disc_y,
                             noise_std=0,
-                            n_rand_init=0,
+                            n_rand_init=0, #additional random inits
                             budget=budget,
                             query_cost=1,
                             queries_x=start_x,

@@ -22,13 +22,11 @@ if __name__ == "__main__":
     parser.add_argument("--encoding", type=str, default="onehot")
     parser.add_argument("--data_csv", type=str, default="fitness_round1.csv")
     parser.add_argument("--obj_col", type=str, default="Diff")
-    parser.add_argument("--output_path", type=str, default="results/ParPgb_production/round1")
+    parser.add_argument("--output_path", type=str, default="results/ParPgb_production/round1/")
     parser.add_argument("--batch_size", type=int, default=90)
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--seed_index", type=int, default=0)
-    parser.add_argument("--kernel", type=int, default="RBF", cjhoices=["RBF"])
-    parser.add_argument("--mtypes", type=list, default=["BOOSTING_ENSEMBLE", "GP_BOTORCH", "DNN_ENSEMBLE", "DKL_BOTORCH"])
-    parser.add_argument("--aqn_fns", type=list, default=['GREEDY', 'UCB', 'TS'])
+    parser.add_argument("--kernel", type=str, default="RBF", choices=["RBF"])
     parser.add_argument("--xi", type=float, default=4, help="trade-off parameter for the UCB acquisition function")
     parser.add_argument("--activation", type=str, default="lrelu")
     parser.add_argument("--min_noise", type=float, default=1e-6)
@@ -67,8 +65,8 @@ if __name__ == "__main__":
     except:
         print('Context already set.')
 
-    os.makedirs(subdir, exist_ok=True)
-    os.system('cp ' + __file__ + ' ' + subdir)
+    os.makedirs(path, exist_ok=True)
+    os.system('cp ' + __file__ + ' ' + path)
     print('Script stored.')
 
     runs = args.runs #only perform one prediction
@@ -96,8 +94,8 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(seed)
 
         kernel=args.kernel
-        for mtype in args.mytpes: 
-            for acq_fn in args.acq_fns: 
+        for mtype in ["BOOSTING_ENSEMBLE", "GP_BOTORCH", "DNN_ENSEMBLE", "DKL_BOTORCH"]: 
+            for acq_fn in ['GREEDY', 'UCB', 'TS']: 
                 dropout=args.dropout
 
                 if mtype == 'GP_BOTORCH' and 'ESM2' in encoding:
@@ -156,7 +154,7 @@ if __name__ == "__main__":
                     queries_x=obj.Xtrain,
                     queries_y=obj.ytrain,
                     indices=obj.train_indices,
-                    savedir=subdir+fname,
+                    savedir=path+fname,
                     batch_size = batch_size
                 )
                 arg_list.append((args, seed))
@@ -168,4 +166,4 @@ if __name__ == "__main__":
         pool.join()
         print(f'Total runtime: {time.time()-total_time}')
     
-    print('Tensors will be saved in {}'.format(subdir))
+    print('Tensors will be saved in {}'.format(path))
