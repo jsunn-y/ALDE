@@ -26,7 +26,7 @@ Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The 
 
 For every round of training and prediction, ALDE can be executed using the following command:
 ```
-python execute_production.py --name=ParPgb --data_csv=fitness_round1.csv -obj_col=Diff
+python execute_production.py --name=ParPgb --data_csv=fitness_round1.csv --obj_col=Diff --results/ParPgb_production/round1 --batch_size=90 --seed_index=0
 ```
 Within the argparser, `name` must be specified to correspond to the relevant data folder. The data should be loaded as a dataframe from `/data/{name}/{data_csv}` containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the sequence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions. The `path` variable should be updated to where the results will be saved. `batch_size` specifies the number of samples to query for the next round of screening. Script for the protoglobin wet-lab campaign in our study is given as an example.
 
