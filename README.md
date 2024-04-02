@@ -20,15 +20,15 @@ Production runs should be used for a wet-lab ALDE campaign. It can also be used 
 
 First generate the design space for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Scripts for the protoglobin wet-lab campaign in our study are given as an example. Then run the script:
 ```
-python generate_domain.py
+python generate_domain.py --name=ParPgb --nsites=5
 ```
 Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `all_combos.csv`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos. For a given ALDE campaign, generating the domain only needs to be executed once. Afterward, training data should be uploaded into that folder as `fitness.csv`, where a 'Combo' column specifies the protein sequence at the mutated residues and a separate column specifies the respective fitness value. Note that unseen labels in the domain are filled in as 0 values as placeholders, so the calculated regret is meaningless for the production runs.
 
 For every round of training and prediction, ALDE can be executed using the following command:
 ```
-python execute_production.py
+python execute_production.py --name=ParPgb --data_csv=fitness_round1.csv -obj_col=Diff
 ```
-Within the script, `name` must be specified to correspond to the relevant data folder. `df` should be loaded as a dataframe from `/data/{name}/fitness.csv` containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the sequence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions. The `path` variable should be updated to where the results will be saved. `batch_size` specifies the number of samples to query for the next round of screening. Script for the protoglobin wet-lab campaign in our study is given as an example.
+Within the argparser, `name` must be specified to correspond to the relevant data folder. The data should be loaded as a dataframe from `/data/{name}/{data_csv}` containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the sequence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions. The `path` variable should be updated to where the results will be saved. `batch_size` specifies the number of samples to query for the next round of screening. Script for the protoglobin wet-lab campaign in our study is given as an example.
 
 ## Simulation Runs
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
@@ -36,6 +36,11 @@ To reproduce the computational simulations on complete landscapes (GB1 and TrpB)
 python execute_simulation.py
 ```
 ALDE will be simulated for 2 combinatorially complete datasets, 4 encodings, 3 models, and 3 acquisition functions, as outlined in our study.
+
+To reproduce the baseline with a single round of ALDE, run the following command:
+```
+python execute_simulation.py --n_pseudorand_init=384 --budget=96 --output_path=results/384+96+baseline
+```
 
 ## Results Files
 The general format for results file prefix is: `{model name}-DO-{dropout rate}-{kernel}-{acquisition function}-{end layer dimensions of architecture}_{index for the random seed}`. Different encodings and datasets will be organized in separate folders. Each ALDE campaign (for a given encoding, model, and acquisition function in the prefix) will produce the following results files as torch tensors:
