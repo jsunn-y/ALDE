@@ -27,7 +27,7 @@ Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The 
 For every round of training and prediction, ALDE can be executed using the following command:
 ```
 python execute_production.py --name=ParPgb \
---data_csv=fitness_round1.csv \
+--data_csv=fitness_round1_training.csv \
 --obj_col=Diff \
 --output_path=results/ParPgb_production/round1/ \
 --batch_size=90 \
