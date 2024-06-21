@@ -14,7 +14,7 @@ mkdir results
 conda env create -f alde.yml
 conda activate ALDE
 ```
-The encodings and fitness data used in our study can be downloaded from [here]([link](https://zenodo.org/records/12196802)), and should be unzipped to replace the data folder.
+The encodings and fitness data used in our study can be downloaded from [here]([[link](https://zenodo.org/records/12196802)]), and should be unzipped to replace the data folder.
 
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin (ParPgb) wet-lab ALDE campaign demonstrated in our study.
