@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import argparse
@@ -5,7 +6,7 @@ import torch
 from src.encoding_utils import generate_onehot, generate_all_combos
 
 """
-Script to generate a domain for the combinatorial library, for a production (wet-lab) run. Only needs to be run once before an ALDE campaign.
+Script to generate a domain (all of the variants and encodings to enumerate across) for the combinatorial library, for a production (wet-lab) run. Only needs to be run once before an ALDE campaign.
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,6 +20,8 @@ if __name__ == "__main__":
 
     #set path for to store results
     path = 'data/' + name + '/'
+    #make the directory if it doesn't exist
+    os.makedirs(path, exist_ok=True)
 
     #generate strings for all combos in the design space
     all_combos = generate_all_combos(nsites)

@@ -5,6 +5,7 @@ old_runs/
 archived/
 data/
 production_utils/
+analysis/ParPgb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
