@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_path", type=str, default='results/5x96_simulations/')
     parser.add_argument("--runs", type=int, default=70)
     parser.add_argument("--seed_index", type=int, default=0)
-    parser.add_argument("--kernel", type=str, default="RBF", cjhoices=["RBF"])
+    parser.add_argument("--kernel", type=str, default="RBF", choices=["RBF"])
     parser.add_argument("--xi", type=float, default=4, help="trade-off parameter for the UCB acquisition function")
     parser.add_argument("--activation", type=str, default="lrelu")
     parser.add_argument("--min_noise", type=float, default=1e-6)
