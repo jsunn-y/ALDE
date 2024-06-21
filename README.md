@@ -1,4 +1,5 @@
 # ALDE
+![image](figs/ALDE_workflow.png)
 Active Learning-assisted Directed Evolution (ALDE) is a package for simulating and performing active learning on combinatorial site-saturation libraries for protein engineering.
 
 ## Installation
