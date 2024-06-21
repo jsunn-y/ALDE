@@ -13,9 +13,7 @@ channels:
 - conda-forge
 dependencies:
 - python=3.11
-- botorch=0.8.0
 - flake8
-- gpytorch=1.9.0
 - ipykernel
 - logomaker
 - matplotlib
@@ -26,8 +24,12 @@ dependencies:
 - pip
 - pytorch=2.1.1
 - pytorch-cuda=12.1  # change this as needed
-- pyro-ppl=1.8.3
+- pyro-ppl=1.8.6
 - scipy
 - seaborn
 - tqdm
-- xgboost #through pip
+- pip:
+  - gpytorch==1.11
+  - botorch==0.9.4
+  - xgboost #through pip
+

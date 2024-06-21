@@ -157,7 +157,7 @@ if __name__ == "__main__":
                         #filename
                         fname = mtype + '-DO-' + str(dropout) + '-' + kernel + '-' + acq_fn + '-' + str(arc[-2:]) + '_' + str(r + 1)
 
-                        args = BO_ARGS(
+                        sim_args = BO_ARGS(
                             mtype=mtype,
                             kernel=kernel,
                             acq_fn=acq_fn,
@@ -184,7 +184,7 @@ if __name__ == "__main__":
                             savedir=subdir+fname,
                             batch_size = batch_size
                         )
-                        arg_list.append((args, seed))
+                        arg_list.append((sim_args, seed))
 
             total_time = time.time()
             with mp.Pool(num_simult_jobs) as pool:
