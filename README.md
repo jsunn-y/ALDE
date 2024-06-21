@@ -18,7 +18,7 @@ The encodings and fitness data used in our study can be downloaded from [here](l
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin (ParPgb) wet-lab ALDE campaign demonstrated in our study.
 
-First generate the design space for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Scripts for the protoglobin wet-lab campaign in our study are given as an example. Then run the script:
+First generate the design space (all variants and encodings to search across) for the combinatorial library by specifying `nsites` (number of residues being simultanesouly mutated) and `name` (name of the project) within `generate_domain.py`. Scripts for the protoglobin wet-lab campaign in our study are given as an example. Then run the script:
 ```
 python generate_domain.py --name=ParPgb --nsites=5
 ```
