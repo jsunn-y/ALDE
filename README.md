@@ -37,7 +37,7 @@ python execute_production.py --name=ParPgb \
 Within the argparser, `name` must be specified to correspond to the relevant data folder. The data should be loaded as a dataframe from `/data/{name}/{data_csv}` containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the sequence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions. The `path` variable should be updated to where the results will be saved. `batch_size` specifies the number of samples to query for the next round of screening. Script for the protoglobin wet-lab campaign in our study is given as an example.
 
 ## Simulation Runs
-#The results fromt the presaved simulation runs in our study can be uploaded to `/results` from [here](link).
+<! The results fromt the presaved simulation runs in our study can be uploaded to `/results` from [here](link).
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
 ```
 python execute_simulation.py
