@@ -14,7 +14,7 @@ mkdir results
 conda env create -f alde.yml
 conda activate ALDE
 ```
-The encodings and fitness data used in our study can be downloaded from [here]([link](https://zenodo.org/records/12196802)), and should be unzipped to replace the data folder.
+The encodings and fitness data used in our study can be downloaded from [here](https://zenodo.org/records/12196802), and should be unzipped to replace the empty `data` folder. If you are using your own training data, you can skip this download.
 
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin (ParPgb) wet-lab ALDE campaign demonstrated in our study.
@@ -37,7 +37,7 @@ python execute_production.py --name=ParPgb \
 Within the argparser, `name` must be specified to correspond to the relevant data folder. The data should be loaded as a dataframe from `/data/{name}/{data_csv}` containing sequences and their corresponding fitness values. `obj_col` should specify the column containing fitness values to be optimized. In this csv, the sequence column should be labeled as 'Combo'. By default, predictions will be made using onehot encodings, for 4 different models and 3 different acquisition functions. The `path` variable should be updated to where the results will be saved. `batch_size` specifies the number of samples to query for the next round of screening. Script for the protoglobin wet-lab campaign in our study is given as an example.
 
 ## Simulation Runs
-The results fromt the presaved simulation runs in our study can be uploaded to `/results` from link.
+<! The results fromt the presaved simulation runs in our study can be uploaded to `/results` from [here](link).
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
 ```
 python execute_simulation.py
