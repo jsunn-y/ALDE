@@ -220,7 +220,7 @@ class BayesianOptimization:
                 tree_method = 'hist'
 
             #use tweedie if all labels are positive
-            if min(self.queries_y) >= 0:
+            if min(self.disc_y) >= 0:
                 self.model_kwargs = {
                 'tree_method': tree_method,
                 "objective": "reg:tweedie",

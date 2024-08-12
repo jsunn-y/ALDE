@@ -12,8 +12,7 @@ import src.objectives as objectives
 import src.utils as utils
 
 '''
-Script to repdouce all of the active learning simulations on GB1 and TrpB datasets. Launches optimization runs as
-separate processes.
+Script to repdouce all of the active learning simulations on GB1 and TrpB datasets. Launches optimization runs as separate processes.
 '''
 
 if __name__ == "__main__":
