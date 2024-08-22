@@ -14,7 +14,7 @@ mkdir results
 conda env create -f alde.yml
 conda activate ALDE
 ```
-The encodings and fitness data used in our study can be downloaded from [here](https://zenodo.org/records/12196802), and should be unzipped to replace the empty `data` folder. If you are using your own training data, you can skip this download.
+The encodings and fitness data used in our study can be downloaded from [here](https://zenodo.org/records/12196802), and should be unzipped to replace the empty `data` folder. If you are using your own training data, you can skip this download. Install time should be on the order of seconds to minutes.
 
 ## Production Runs
 Production runs should be used for a wet-lab ALDE campaign. It can also be used to reproduce the results from the protoglobin (ParPgb) wet-lab ALDE campaign demonstrated in our study.
@@ -23,7 +23,7 @@ First generate the design space (all variants and encodings to search across) fo
 ```
 python generate_domain.py --name=ParPgb --nsites=5
 ```
-Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `all_combos.csv`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos. For a given ALDE campaign, generating the domain only needs to be executed once. Afterward, training data should be uploaded into that folder as `fitness.csv`, where a 'Combo' column specifies the protein sequence at the mutated residues and a separate column specifies the respective fitness value. Note that unseen labels in the domain are filled in as 0 values as placeholders, so the calculated regret is meaningless for the production runs.
+Outputs from `generate_domain.py` will appear in the folder `/data/{name}`. The two outputs are `all_combos.csv`, which contains the order of the combos in the design space (domain) as strings and `onehot_x.pt`, which is a torch tensor containing the respective onehot encodings in the same order as the list of combos. For a given ALDE campaign, generating the domain only needs to be executed once. Afterward, training data should be uploaded into that folder as `fitness.csv`, where a 'Combo' column specifies the protein sequence at the mutated residues and a separate column specifies the respective fitness value. Note that unseen labels in the domain are filled in as 0 values as placeholders, so the calculated regret is meaningless for the production runs. Run time for a typical computer with a GPU or several CPUs will be on the order of minutes.
 
 For every round of training and prediction, ALDE can be executed using the following command:
 ```
