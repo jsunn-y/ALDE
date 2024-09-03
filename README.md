@@ -39,7 +39,7 @@ Within the argparser, `name` must be specified to correspond to the relevant dat
 Relevant output will be found in the `results` path and will end with `indices.pt`, corresponding to the indices of the training and nearly queried variants, in order. These indices can then be mapped to the `all_combos.csv` file to determine the sequences of the corresponding variants.
 
 ## Simulation Runs
-<! The results fromt the presaved simulation runs in our study can be uploaded to `/results` from [here](link).
+
 To reproduce the computational simulations on complete landscapes (GB1 and TrpB) from our study:
 ```
 python execute_simulation.py
