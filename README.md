@@ -87,6 +87,4 @@ We recommend running the scripts with default parameters to reproduce to results
 | verbose | 2 | how much to report to the terminal  |
 
 ## Analysis
-The raw outputs from the ALDE simulations can be summarized into a dataframe using `analysis/tabulate_results.ipynb`. Example output from tabulation of the simulations are provided in `analysis/all_results.csv`. 
-
-Afterward, example visualizations of the results can be performed with `analysis/trajectory_visualization.ipynb`.
+The raw outputs from the ALDE simulations can be summarized into a dataframe using `analysis/tabulate_results.ipynb`. Example output from tabulation of the simulations are provided in `analysis/all_results.csv`. Afterward, example visualizations of the tabulated results can be performed with `analysis/visualization.ipynb`.
