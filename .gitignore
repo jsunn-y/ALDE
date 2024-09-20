@@ -6,6 +6,7 @@ archived/
 data/
 production_utils/
 analysis/ParPgb/
+analysis/trajectory_visualization.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
