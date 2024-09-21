@@ -48,7 +48,7 @@ ALDE will be simulated for 2 combinatorially complete datasets, 4 encodings, 3 m
 
 To reproduce the baseline with a single round of ALDE, run the following command:
 ```
-python execute_simulation.py --n_pseudorand_init=384 --budget=96 --output_path=results/384+96+baseline
+python execute_simulation.py --n_pseudorand_init=384 --budget=96 --output_path=results/384+96+baseline/
 ```
 
 ## Results Files
