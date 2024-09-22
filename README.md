@@ -88,3 +88,5 @@ We recommend running the scripts with default parameters to reproduce to results
 
 ## Analysis
 The raw outputs from the ALDE simulations can be summarized into a dataframe using `analysis/tabulate_results.ipynb`. Example output from tabulation of the simulations are provided in `analysis/all_results.csv`. Afterward, example visualizations of the tabulated results can be performed with `analysis/visualization.ipynb`.
+
+The complete processed fitness data from our wet-lab campaign is provided in `analysis/ParPgb_fitness_all.csv`.
