@@ -7,6 +7,7 @@ data/
 production_utils/
 analysis/ParPgb/
 analysis/trajectory_visualization.ipynb
+analysis/lengthscale_prior/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

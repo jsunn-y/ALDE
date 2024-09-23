@@ -198,14 +198,14 @@ class BoTorchGP(SingleTaskGP, GenericModel):
 
         if kernel is None or kernel.lower() == "rbf":
 
-            lengthscale_prior = gpytorch.priors.GammaPrior(concentration=3.0, rate=3.0)
+            #lengthscale_prior = gpytorch.priors.GammaPrior(concentration=3.0, rate=3.0)
 
             covar_module = gpytorch.kernels.ScaleKernel(
                 gpytorch.kernels.RBFKernel(
                     has_lengthscale=True,
                     ard_num_dims=architecture[-2],
                     num_dims=architecture[-2],
-                    lengthscale_prior=lengthscale_prior,
+                    #lengthscale_prior=lengthscale_prior,
                 )
             )
         # elif kernel.lower() in ["lin", "linear",]:
