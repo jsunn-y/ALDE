@@ -8,6 +8,7 @@ production_utils/
 #analysis/ParPgb/
 analysis/ParPgb/old_withZS.ipynb
 analysis/lengthscale_prior/
+analysis/epistasis.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
